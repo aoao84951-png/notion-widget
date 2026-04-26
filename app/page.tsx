@@ -13,19 +13,17 @@ const THEME_COLOR_MAP: Record<string, string> = {
   wide: '#2E3D6F', purple: '#7B58D3', green: '#44A67B', yellow: '#F0B11D',
 };
 
-function pickThemeColor(input: string | null) {
-  if (!input) return '#6C9AC4';
-  const lower = input.toLowerCase();
-  return THEME_COLOR_MAP[lower] || (input.startsWith('#') ? input : '#6C9AC4');
-}
-
 function HomeContent() {
   const searchParams = useSearchParams();
   const themeColor = searchParams.get('themeColor');
   const [items, setItems] = useState<ReadingItem[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
 
-  const pointColor = useMemo(() => pickThemeColor(themeColor), [themeColor]);
+  const pointColor = useMemo(() => {
+    if (!themeColor) return '#6C9AC4';
+    const lower = themeColor.toLowerCase();
+    return THEME_COLOR_MAP[lower] || (themeColor.startsWith('#') ? themeColor : '#6C9AC4');
+  }, [themeColor]);
 
   useEffect(() => {
     fetch('/api/notion').then(res => res.json()).then(data => {
@@ -44,11 +42,12 @@ function HomeContent() {
   const currentNumber = totalItems > 0 ? currentIndex + 1 : 0;
 
   return (
-    /* [핵심] 배경색을 아예 부여하지 않고 bg-transparent로 고정합니다. 
-       이렇게 하면 노션 박스 안의 빈 공간에 노션 배경색이 그대로 투과됩니다. */
-    <main className="fixed inset-0 flex items-center justify-center bg-transparent p-0 overflow-hidden !shadow-none">
-      
-      {/* 위젯 본체: 320px 고정 크기이며, 본체만 하얀색 배경을 가집니다. */}
+    /* [핵심] 배경을 아예 없앱니다. min-h-screen 대신 h-fit을 써서 높이를 내용물에 맞춥니다. */
+    <main className="flex h-fit min-h-screen w-full items-center justify-center bg-transparent p-4 overflow-hidden">
+      {/* 위젯 본체: 
+          - bg-white: 위젯 자체는 흰색이어야 글자가 잘 보입니다.
+          - border-2 border-gray-200: 요청하신 또렷한 테두리
+      */}
       <div className="flex w-[320px] flex-col items-center rounded-[35px] border-2 border-gray-200 bg-white p-6 shadow-none">
         
         <div className="mb-6 flex w-full items-center justify-between px-1">
@@ -66,7 +65,7 @@ function HomeContent() {
             <div className="relative h-full w-full">
               <img src={data.coverImage} className="absolute inset-0 h-full w-full object-cover blur-2xl opacity-40 scale-110" alt="" />
               <div className="relative h-full w-full p-4 flex items-center justify-center">
-                <img src={data.coverImage} className="h-full w-auto rounded-[20px] object-contain shadow-md" alt={data.title} />
+                <img src={data.coverImage} className="h-full w-auto rounded-[20px] object-contain shadow-2xl" alt={data.title} />
               </div>
             </div>
           )}
