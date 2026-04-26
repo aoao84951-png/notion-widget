@@ -126,13 +126,14 @@ function StackWidgetContent() {
   };
 
   return (
-    // justify-center로 위아래 중앙 정렬 복원
     <main className="fixed inset-0 flex items-center justify-center bg-white dark:bg-[#191919] p-0 overflow-hidden !shadow-none">
       
-      {/* [수정] 새로고침 버튼을 scale의 영향을 받지 않는 최상위 컨테이너에 배치 */}
-      {/* 이렇게 해야 기기/창 크기에 상관없이 항상 우측 상단 구석에 고정됩니다. */}
-      <div className="absolute top-10 right-10 z-[100]">
-        <button onClick={fetchData} className="p-3 rounded-full hover:bg-black/5 active:scale-90 bg-white/30 dark:bg-white/10 backdrop-blur-md border border-black/5 dark:border-white/10 transition-all shadow-sm">
+      {/* [수정] 새로고침 버튼을 모든 레이아웃과 독립시켜 우측 상단에 박아둠 */}
+      <div className="absolute top-6 right-6 z-[999]">
+        <button 
+          onClick={fetchData} 
+          className="p-3 rounded-full hover:bg-black/5 active:scale-90 bg-white/40 dark:bg-white/10 backdrop-blur-md border border-black/5 dark:border-white/10 transition-all"
+        >
           <RotateCw size={24} className={`text-gray-400 ${isRefreshing ? 'animate-spin' : ''}`} />
         </button>
       </div>
@@ -141,7 +142,7 @@ function StackWidgetContent() {
         style={{ transform: 'scale(0.5)', transformOrigin: 'center center' }} 
         className="relative flex flex-col items-center justify-center min-w-[1400px] h-full"
       >
-        <div className="flex items-center justify-center gap-12 w-full">
+        <div className="flex items-center justify-center gap-12 w-full translate-y-[-20px]">
           {items.length > 0 ? (
             <>
               {renderBook(-2)}
