@@ -54,78 +54,81 @@ function HomeContent() {
   const currentNumber = totalItems > 0 ? currentIndex + 1 : 0;
 
   return (
-    /* [핵심 수정] 
-       - bg-white: 기본 라이트 모드 배경 (하얀색)
-       - dark:bg-[#191919]: 다크 모드일 때만 노션 배경색으로 자동 전환
-    */
+    /* 모드별 배경색 자동 전환 유지 */
     <main className="fixed inset-0 flex h-full w-full items-center justify-center bg-white dark:bg-[#191919] p-0 overflow-hidden shadow-none transition-colors duration-300">
       
-      {/* 위젯 본체 */}
-      <div className="relative flex w-[320px] flex-col items-center rounded-[35px] border-2 border-gray-200 bg-white p-6 shadow-none overflow-hidden">
+      {/* [수정] 위젯 전체 너비를 320px에서 280px로 줄이고 패딩을 조정했습니다. */}
+      <div className="relative flex w-[280px] flex-col items-center rounded-[30px] border-2 border-gray-200 bg-white p-5 shadow-none overflow-hidden">
         
-        <div className="mb-6 flex w-full items-center justify-between px-1">
-          <div className="flex gap-1.5">
-            <div className="h-3 w-3 rounded-full bg-[#FF5F57]" />
-            <div className="h-3 w-3 rounded-full bg-[#FEBC2E]" />
-            <div className="h-3 w-3 rounded-full bg-[#28C840] opacity-30" />
+        {/* 상단바: 간격 조정 */}
+        <div className="mb-4 flex w-full items-center justify-between px-1">
+          <div className="flex gap-1">
+            <div className="h-2.5 w-2.5 rounded-full bg-[#FF5F57]" />
+            <div className="h-2.5 w-2.5 rounded-full bg-[#FEBC2E]" />
+            <div className="h-2.5 w-2.5 rounded-full bg-[#28C840] opacity-30" />
           </div>
-          <span className="text-[10px] font-black tracking-[0.2em] text-gray-400">MINIPLAY</span>
+          <span className="text-[9px] font-black tracking-[0.2em] text-gray-400">MINIPLAY</span>
           
           <button 
             onClick={fetchData}
             className="p-1 rounded-full hover:bg-gray-100 transition-all active:scale-95"
             title="새로고침"
           >
-            <RotateCw size={14} className={`text-gray-400 ${isRefreshing ? 'animate-spin' : ''}`} />
+            <RotateCw size={12} className={`text-gray-400 ${isRefreshing ? 'animate-spin' : ''}`} />
           </button>
         </div>
 
-        <div className="relative mb-6 aspect-square w-full rounded-[40px] overflow-hidden bg-gray-50 shadow-inner">
+        {/* 커버 이미지: 너비에 맞춰 크기 축소 */}
+        <div className="relative mb-5 aspect-square w-full rounded-[30px] overflow-hidden bg-gray-50 shadow-inner">
           {data.coverImage && (
             <div className="relative h-full w-full">
               <img src={data.coverImage} className="absolute inset-0 h-full w-full object-cover blur-2xl opacity-40 scale-110" alt="" />
-              <div className="relative h-full w-full p-4 flex items-center justify-center">
-                <img src={data.coverImage} className="h-full w-auto rounded-[20px] object-contain shadow-2xl" alt={data.title} />
+              <div className="relative h-full w-full p-3 flex items-center justify-center">
+                <img src={data.coverImage} className="h-full w-auto rounded-[15px] object-contain shadow-xl" alt={data.title} />
               </div>
             </div>
           )}
         </div>
 
         <div className="w-full">
-          <div className="mb-5 w-full px-2">
-            <div className="mb-2 flex justify-between text-[10px] font-medium text-gray-400">
+          {/* 프로그레스 바 영역 */}
+          <div className="mb-4 w-full px-1">
+            <div className="mb-1.5 flex justify-between text-[9px] font-medium text-gray-400">
               <span>02:50</span>
               <span>-01:25</span>
             </div>
-            <div className="relative h-[3px] w-full rounded-full bg-gray-100">
+            <div className="relative h-[2px] w-full rounded-full bg-gray-100">
               <div className="absolute h-full w-[70%] rounded-full" style={{ backgroundColor: pointColor }} />
             </div>
           </div>
 
-          <div className="mb-8 text-center px-2">
-            <h2 className="text-sm font-bold text-gray-800 break-words whitespace-normal leading-tight">
+          {/* 텍스트 정보: 폰트 크기 및 간격 미세 조정 */}
+          <div className="mb-6 text-center px-1">
+            <h2 className="text-[13px] font-bold text-gray-800 break-words whitespace-normal leading-snug">
               {data.title || '로딩 중...'}
             </h2>
-            <p className="mt-1 text-[11px] text-gray-500">{data.author || '저자 미상'}</p>
+            <p className="mt-0.5 text-[10px] text-gray-500">{data.author || '저자 미상'}</p>
             {totalItems > 0 && (
-              <p className="mt-1 text-[10px] font-medium text-gray-400">
+              <p className="mt-1 text-[9px] font-medium text-gray-400">
                 ({currentNumber} / {totalItems})
               </p>
             )}
           </div>
 
-          <div className="mb-8 flex items-center justify-center gap-8 text-gray-400">
-            <SkipBack size={24} className="fill-current" />
-            <Pause size={32} style={{ color: pointColor, fill: pointColor }} />
-            <SkipForward size={24} className="fill-current" />
+          {/* 컨트롤 버튼: 크기 축소 */}
+          <div className="mb-6 flex items-center justify-center gap-6 text-gray-400">
+            <SkipBack size={20} className="fill-current" />
+            <Pause size={28} style={{ color: pointColor, fill: pointColor }} />
+            <SkipForward size={20} className="fill-current" />
           </div>
 
-          <div className="flex w-full items-center gap-3 px-4 pb-2">
-            <VolumeX size={12} className="text-gray-400" />
-            <div className="relative h-[3px] flex-grow rounded-full bg-gray-100">
+          {/* 볼륨 바 영역 */}
+          <div className="flex w-full items-center gap-2 px-3 pb-1">
+            <VolumeX size={10} className="text-gray-400" />
+            <div className="relative h-[2px] flex-grow rounded-full bg-gray-100">
               <div className="absolute h-full w-[40%] rounded-full" style={{ backgroundColor: pointColor }} />
             </div>
-            <Volume2 size={12} className="text-gray-400" />
+            <Volume2 size={10} className="text-gray-400" />
           </div>
         </div>
       </div>
