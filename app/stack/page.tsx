@@ -64,7 +64,6 @@ function StackWidgetContent() {
     const item = items[idx];
     const isCenter = offset === 0;
     
-    // [간격 복구] 사진에서 가장 좋았던 그 너비 수치로 복구
     const cardWidth = isCenter ? '280px' : '220px'; 
     const scale = isCenter ? 'scale(1)' : 'scale(0.85)';
     const opacity = isCenter ? 1 : 0.3;
@@ -108,22 +107,29 @@ function StackWidgetContent() {
           )}
         </div>
 
-        {/* [여백 제거] min-h를 아예 없애고, 필요한 만큼만 공간을 차지하게 함 */}
         <div 
-          className="text-center w-full px-4 mt-6 transition-all duration-700"
+          className="text-center w-full px-3 mt-6 transition-all duration-700"
           style={{ 
             transform: isCenter ? 'translateY(0)' : 'translateY(10px)'
           }}
         >
-          <h2 className="text-[18px] font-black text-[#111] dark:text-gray-100 leading-tight mb-1 break-keep tracking-[0.05em] line-clamp-2">
+          {/* 제목: 아이패드에서 너무 커지지 않게 17px로 상한선을 두고 2줄 제한 */}
+          <h2 
+            className="font-black text-[#111] dark:text-gray-100 leading-tight mb-1 break-keep tracking-[0.05em] line-clamp-2 overflow-hidden"
+            style={{ fontSize: isCenter ? '17px' : '13px' }}
+          >
             {item.title}
           </h2>
-          <p className="text-[14px] font-black text-[#888] tracking-[0.05em] truncate mb-3">
+          {/* 저자: 제목보다 작게 설정 */}
+          <p 
+            className="font-black text-[#888] tracking-[0.05em] truncate mb-3"
+            style={{ fontSize: isCenter ? '13px' : '10px' }}
+          >
             {item.author || '저자 미상'}
           </p>
 
           <div className="flex justify-center w-full" style={{ opacity: isCenter ? 1 : 0 }}>
-             <span className="text-[16px] font-black text-[#555] dark:text-gray-400 tracking-[0.2em]">
+             <span className="font-black text-[#555] dark:text-gray-400 tracking-[0.2em]" style={{ fontSize: '15px' }}>
                 {currentIndex + 1} / {items.length}
               </span>
           </div>
@@ -133,9 +139,7 @@ function StackWidgetContent() {
   };
 
   return (
-    // justify-center로 위아래 균형을 잡되, 배경 여백이 남지 않도록 세팅
     <main className="fixed inset-0 flex items-center justify-center bg-white dark:bg-[#191919] p-0 overflow-hidden !shadow-none">
-      {/* zoom: 0.5가 가장 안정적으로 5개를 다 보여줍니다. */}
       <div style={{ zoom: 0.5 }} className="relative flex flex-col items-center justify-center w-full h-full">
         
         <div className="absolute top-10 right-10 z-50">
@@ -144,7 +148,6 @@ function StackWidgetContent() {
           </button>
         </div>
 
-        {/* [간격 복구] 가장 좋아하셨던 gap-6 수치로 적용 */}
         <div className="flex items-center justify-center gap-6 w-full">
           {items.length > 0 ? (
             <>
