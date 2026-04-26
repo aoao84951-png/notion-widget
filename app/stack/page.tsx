@@ -107,9 +107,9 @@ function StackWidgetContent() {
           )}
         </div>
 
-        {/* [수정] 최소 높이를 더 줄여서 하단 여백 제거 */}
+        {/* [핵심] min-h 제거, mt 제거 -> 텍스트와 이미지 사이 공간 타이트하게 고정 */}
         <div 
-          className="text-center w-full px-4 mt-6 transition-all duration-700 min-h-[90px]"
+          className="text-center w-full px-4 mt-6 transition-all duration-700"
           style={{ 
             transform: isCenter ? 'translateY(0)' : 'translateY(10px)'
           }}
@@ -132,17 +132,18 @@ function StackWidgetContent() {
   };
 
   return (
-    // justify-center 대신 items-center를 사용하되 하단 마진을 없앰
-    <main className="fixed inset-0 flex items-center justify-center bg-white dark:bg-[#191919] p-0 overflow-hidden">
-      {/* [수정] translate-y를 사용하여 전체 콘텐츠를 하단으로 더 많이 내림 */}
-      <div style={{ zoom: 0.5 }} className="relative flex flex-col items-center justify-center w-full h-full translate-y-[60px]">
+    // justify-center로 복원하여 위아래 밸런스를 맞춤
+    <main className="fixed inset-0 flex items-center justify-center bg-white dark:bg-[#191919] p-0 overflow-hidden !shadow-none">
+      {/* 줌 배율 0.55로 상향, pt 제거, translate 제거 -> 중앙에 꽉 차게 배치 */}
+      <div style={{ zoom: 0.55 }} className="relative flex flex-col items-center justify-center w-full h-full">
         
-        <div className="absolute top-[-40px] right-10 z-50">
+        <div className="absolute top-10 right-10 z-50">
           <button onClick={fetchData} className="p-3 rounded-full hover:bg-black/5 active:scale-90 bg-white/30 dark:bg-white/10 backdrop-blur-md border border-black/5 dark:border-white/10 transition-all">
             <RotateCw size={24} className={`text-gray-400 ${isRefreshing ? 'animate-spin' : ''}`} />
           </button>
         </div>
 
+        {/* translate 제거 -> 정중앙 정렬 */}
         <div className="flex items-center justify-center gap-6 w-full">
           {items.length > 0 ? (
             <>
