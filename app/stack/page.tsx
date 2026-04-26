@@ -84,9 +84,8 @@ function StackWidgetContent() {
           pointerEvents: isCenter ? 'auto' : 'none'
         }}
       >
-        {/* 상단 라벨: 12px -> 10px로 축소 (가장 작게) */}
         <span 
-          className="text-[10px] font-black mb-4 tracking-[0.2em] transition-opacity duration-700 h-[20px] flex items-center" 
+          className="text-[12px] font-black mb-4 tracking-[0.2em] transition-opacity duration-700 h-[20px] flex items-center" 
           style={{ color: pointColor, opacity: isCenter ? 1 : 0 }}
         >
           {statusLabel}
@@ -108,30 +107,16 @@ function StackWidgetContent() {
           )}
         </div>
 
-        <div 
-          className="text-center w-full px-4 mt-6 transition-all duration-700"
-          style={{ 
-            transform: isCenter ? 'translateY(0)' : 'translateY(10px)'
-          }}
-        >
-          {/* 제목: 18px -> 14px로 대폭 축소 (맥에서도 작게 보이게) */}
-          <h2 
-            className="font-black text-[#111] dark:text-gray-100 leading-tight mb-1 break-keep tracking-[0.05em] line-clamp-2"
-            style={{ fontSize: isCenter ? '14px' : '10px' }}
-          >
+        <div className="text-center w-full px-4 mt-6 transition-all duration-700">
+          <h2 className="text-[18px] font-black text-[#111] dark:text-gray-100 leading-tight mb-2 break-keep tracking-[0.05em] line-clamp-2">
             {item.title}
           </h2>
-          {/* 저자: 14px -> 11px로 축소 */}
-          <p 
-            className="font-black text-[#888] tracking-[0.05em] truncate mb-3"
-            style={{ fontSize: isCenter ? '11px' : '8px' }}
-          >
+          <p className="text-[14px] font-black text-[#888] tracking-[0.05em] truncate mb-3">
             {item.author || '저자 미상'}
           </p>
 
           <div className="flex justify-center w-full" style={{ opacity: isCenter ? 1 : 0 }}>
-             {/* 페이지 번호: 16px -> 12px로 축소 */}
-             <span className="font-black text-[#555] dark:text-gray-400 tracking-[0.2em]" style={{ fontSize: '12px' }}>
+             <span className="text-[16px] font-black text-[#555] dark:text-gray-400 tracking-[0.2em]">
                 {currentIndex + 1} / {items.length}
               </span>
           </div>
@@ -142,15 +127,19 @@ function StackWidgetContent() {
 
   return (
     <main className="fixed inset-0 flex items-center justify-center bg-white dark:bg-[#191919] p-0 overflow-hidden !shadow-none">
-      <div style={{ zoom: 0.5 }} className="relative flex flex-col items-center justify-center w-full h-full">
-        
+      {/* zoom 대신 transform scale을 사용하여 모든 기기에서 동일한 비율 강제 */}
+      <div 
+        style={{ transform: 'scale(0.5)', transformOrigin: 'center' }} 
+        className="relative flex flex-col items-center justify-center min-w-[1200px] h-full"
+      >
         <div className="absolute top-10 right-10 z-50">
           <button onClick={fetchData} className="p-3 rounded-full hover:bg-black/5 active:scale-90 bg-white/30 dark:bg-white/10 backdrop-blur-md border border-black/5 dark:border-white/10 transition-all">
             <RotateCw size={24} className={`text-gray-400 ${isRefreshing ? 'animate-spin' : ''}`} />
           </button>
         </div>
 
-        <div className="flex items-center justify-center gap-6 w-full">
+        {/* gap-8로 간격을 충분히 벌려도 0.5배 축소되므로 잘리지 않습니다. */}
+        <div className="flex items-center justify-center gap-8 w-full">
           {items.length > 0 ? (
             <>
               {renderBook(-2)}
