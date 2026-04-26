@@ -40,19 +40,16 @@ function HomeContent() {
   }, [items]);
 
   const data = items[currentIndex] ?? { title: '', author: '', coverImage: null };
+  const totalItems = items.length;
+  const currentNumber = totalItems > 0 ? currentIndex + 1 : 0;
 
   return (
-    /* [수정 1] 배경 완전 투명화 (!bg-none), 불필요한 그림자 박멸 */
-    <main className="fixed inset-0 flex h-full w-full items-center justify-center bg-transparent !bg-none p-0 overflow-hidden !shadow-none">
+    /* [핵심] 배경색을 아예 부여하지 않고 bg-transparent로 고정합니다. 
+       이렇게 하면 노션 박스 안의 빈 공간에 노션 배경색이 그대로 투과됩니다. */
+    <main className="fixed inset-0 flex items-center justify-center bg-transparent p-0 overflow-hidden !shadow-none">
       
-      {/* [수정 2] 테두리 복구 및 강화
-          - rounded-[35px]: 둥근 테두리 유지
-          - border-2: 테두리 두께 굵게 (또렷하게)
-          - border-gray-200: 라이트모드에서도 잘 보이는 진한 회색 테두리
-          - bg-white: 위젯 본체는 하얀색 고정 (다크모드에서도 본체는 밝게 보임)
-          - shadow-none: 그림자 완전 제거
-      */}
-      <div className="flex w-[320px] flex-col items-center rounded-[35px] border-2 border-gray-200 bg-white p-6 shadow-none overflow-hidden">
+      {/* 위젯 본체: 320px 고정 크기이며, 본체만 하얀색 배경을 가집니다. */}
+      <div className="flex w-[320px] flex-col items-center rounded-[35px] border-2 border-gray-200 bg-white p-6 shadow-none">
         
         <div className="mb-6 flex w-full items-center justify-between px-1">
           <div className="flex gap-1.5">
@@ -87,8 +84,15 @@ function HomeContent() {
           </div>
 
           <div className="mb-8 text-center px-2">
-            <h2 className="text-sm font-bold text-gray-800 line-clamp-1">{data.title || '로딩 중...'}</h2>
-            <p className="mt-1 text-[11px] text-gray-500">{data.author}</p>
+            <h2 className="text-sm font-bold text-gray-800 break-words whitespace-normal leading-tight">
+              {data.title || '로딩 중...'}
+            </h2>
+            <p className="mt-1 text-[11px] text-gray-500">{data.author || '저자 미상'}</p>
+            {totalItems > 0 && (
+              <p className="mt-1 text-[10px] font-medium text-gray-400">
+                ({currentNumber} / {totalItems})
+              </p>
+            )}
           </div>
 
           <div className="mb-8 flex items-center justify-center gap-8 text-gray-400">
