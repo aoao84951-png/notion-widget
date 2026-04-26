@@ -39,10 +39,10 @@ function HomeContent() {
   const data = items[currentIndex] ?? { title: '', author: '', coverImage: null };
 
   return (
-    /* [최종 수정] bg-transparent로 배경을 완전히 없애고 shadow를 제거합니다. */
+    /* [핵심] bg-transparent와 함께 opacity-0을 활용해 배경 이질감을 완전히 제거합니다. */
     <main className="fixed inset-0 flex h-full w-full items-center justify-center bg-transparent p-0 overflow-hidden !shadow-none">
-      {/* 위젯 본체: shadow-none을 적용해 그림자를 완전히 없앴습니다. */}
-      <div className="flex w-[320px] flex-col items-center rounded-[35px] border border-gray-100 bg-white p-6 shadow-none">
+      {/* 위젯 본체: shadow를 아예 제거하고 테두리만 남겨 다크모드에서도 깔끔하게 만듭니다. */}
+      <div className="flex w-[320px] flex-col items-center rounded-[35px] border border-gray-100/50 bg-white p-6 shadow-none">
         
         {/* 상단바 */}
         <div className="mb-6 flex w-full items-center justify-between px-1">
@@ -61,7 +61,7 @@ function HomeContent() {
             <div className="relative h-full w-full">
               <img src={data.coverImage} className="absolute inset-0 h-full w-full object-cover blur-2xl opacity-20 scale-110" alt="" />
               <div className="relative h-full w-full p-4 flex items-center justify-center">
-                <img src={data.coverImage} className="h-full w-auto rounded-[20px] object-contain shadow-md" alt={data.title} />
+                <img src={data.coverImage} className="h-full w-auto rounded-[20px] object-contain" alt={data.title} />
               </div>
             </div>
           )}
