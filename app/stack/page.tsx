@@ -95,7 +95,6 @@ function StackWidgetContent() {
           <h2 className="text-[17px] font-black text-[#111] dark:text-gray-100 leading-tight mb-2 break-keep tracking-[0.1em]">
             {item.title}
           </h2>
-          {/* 저자 텍스트 스타일 수정: font-black 및 tracking 적용 */}
           <p className="text-[13px] font-black text-[#888] tracking-[0.1em]">
             {item.author || '저자 미상'}
           </p>
@@ -106,7 +105,8 @@ function StackWidgetContent() {
 
   return (
     <main className="fixed inset-0 flex items-center justify-center bg-white dark:bg-[#191919] p-0 overflow-hidden !shadow-none">
-      <div className="relative flex w-full h-full flex-col items-center justify-center">
+      {/* zoom 배율을 0.55로 더 낮춰 전체 크기를 작게 만듭니다. */}
+      <div style={{ zoom: 0.55 }} className="relative flex w-full h-full flex-col items-center justify-center">
         
         <div className="absolute top-10 right-10 z-50">
           <button onClick={fetchData} className="p-2.5 rounded-full hover:bg-black/5 active:scale-90 bg-white/30 dark:bg-white/10 backdrop-blur-md border border-black/5 dark:border-white/10 transition-all">
