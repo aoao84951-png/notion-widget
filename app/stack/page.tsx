@@ -64,8 +64,8 @@ function StackWidgetContent() {
     const item = items[idx];
     const isCenter = offset === 0;
     
-    // 옆 카드들을 조금 더 슬림하게 조정해서 가로 폭 확보
-    const cardWidth = isCenter ? '280px' : '200px'; 
+    // [간격 복구] 사진에서 가장 좋았던 그 너비 수치로 복구
+    const cardWidth = isCenter ? '280px' : '220px'; 
     const scale = isCenter ? 'scale(1)' : 'scale(0.85)';
     const opacity = isCenter ? 1 : 0.3;
     const blur = isCenter ? '0px' : '1.5px';
@@ -108,13 +108,14 @@ function StackWidgetContent() {
           )}
         </div>
 
+        {/* [여백 제거] min-h를 아예 없애고, 필요한 만큼만 공간을 차지하게 함 */}
         <div 
           className="text-center w-full px-4 mt-6 transition-all duration-700"
           style={{ 
             transform: isCenter ? 'translateY(0)' : 'translateY(10px)'
           }}
         >
-          <h2 className="text-[18px] font-black text-[#111] dark:text-gray-100 leading-tight mb-2 break-keep tracking-[0.05em] line-clamp-2">
+          <h2 className="text-[18px] font-black text-[#111] dark:text-gray-100 leading-tight mb-1 break-keep tracking-[0.05em] line-clamp-2">
             {item.title}
           </h2>
           <p className="text-[14px] font-black text-[#888] tracking-[0.05em] truncate mb-3">
@@ -132,8 +133,9 @@ function StackWidgetContent() {
   };
 
   return (
+    // justify-center로 위아래 균형을 잡되, 배경 여백이 남지 않도록 세팅
     <main className="fixed inset-0 flex items-center justify-center bg-white dark:bg-[#191919] p-0 overflow-hidden !shadow-none">
-      {/* zoom을 다시 0.5로 낮추어 가로 시야를 확보합니다. */}
+      {/* zoom: 0.5가 가장 안정적으로 5개를 다 보여줍니다. */}
       <div style={{ zoom: 0.5 }} className="relative flex flex-col items-center justify-center w-full h-full">
         
         <div className="absolute top-10 right-10 z-50">
@@ -142,8 +144,8 @@ function StackWidgetContent() {
           </button>
         </div>
 
-        {/* gap을 6에서 2로 확 줄여서 카드들을 안쪽으로 모읍니다. */}
-        <div className="flex items-center justify-center gap-2 w-full">
+        {/* [간격 복구] 가장 좋아하셨던 gap-6 수치로 적용 */}
+        <div className="flex items-center justify-center gap-6 w-full">
           {items.length > 0 ? (
             <>
               {renderBook(-2)}
