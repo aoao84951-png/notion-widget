@@ -84,13 +84,10 @@ function StackWidgetContent() {
           pointerEvents: isCenter ? 'auto' : 'none'
         }}
       >
+        {/* 상단 라벨: 12px -> 10px로 축소 (가장 작게) */}
         <span 
-          className="font-black mb-4 tracking-[0.2em] transition-opacity duration-700 h-[20px] flex items-center" 
-          style={{ 
-            color: pointColor, 
-            opacity: isCenter ? 1 : 0,
-            fontSize: 'min(12px, 2.5vw)' // 화면이 작아지면 글씨도 작아지게 설정
-          }}
+          className="text-[10px] font-black mb-4 tracking-[0.2em] transition-opacity duration-700 h-[20px] flex items-center" 
+          style={{ color: pointColor, opacity: isCenter ? 1 : 0 }}
         >
           {statusLabel}
         </span>
@@ -117,23 +114,24 @@ function StackWidgetContent() {
             transform: isCenter ? 'translateY(0)' : 'translateY(10px)'
           }}
         >
-          {/* 제목: 가로 너비의 4% 크기로 반응하되, 최대 18px까지만 커짐 */}
+          {/* 제목: 18px -> 14px로 대폭 축소 (맥에서도 작게 보이게) */}
           <h2 
             className="font-black text-[#111] dark:text-gray-100 leading-tight mb-1 break-keep tracking-[0.05em] line-clamp-2"
-            style={{ fontSize: isCenter ? 'min(18px, 4.5vw)' : 'min(14px, 3.5vw)' }}
+            style={{ fontSize: isCenter ? '14px' : '10px' }}
           >
             {item.title}
           </h2>
-          {/* 저자: 가로 너비의 3% 크기로 반응 */}
+          {/* 저자: 14px -> 11px로 축소 */}
           <p 
             className="font-black text-[#888] tracking-[0.05em] truncate mb-3"
-            style={{ fontSize: isCenter ? 'min(14px, 3.5vw)' : 'min(11px, 3vw)' }}
+            style={{ fontSize: isCenter ? '11px' : '8px' }}
           >
             {item.author || '저자 미상'}
           </p>
 
           <div className="flex justify-center w-full" style={{ opacity: isCenter ? 1 : 0 }}>
-             <span className="font-black text-[#555] dark:text-gray-400 tracking-[0.2em]" style={{ fontSize: 'min(16px, 4vw)' }}>
+             {/* 페이지 번호: 16px -> 12px로 축소 */}
+             <span className="font-black text-[#555] dark:text-gray-400 tracking-[0.2em]" style={{ fontSize: '12px' }}>
                 {currentIndex + 1} / {items.length}
               </span>
           </div>
