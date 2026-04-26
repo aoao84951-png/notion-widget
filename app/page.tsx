@@ -13,16 +13,19 @@ const THEME_COLOR_MAP: Record<string, string> = {
   wide: '#2E3D6F', purple: '#7B58D3', green: '#44A67B', yellow: '#F0B11D',
 };
 
+function pickThemeColor(input: string | null) {
+  if (!input) return '#6C9AC4';
+  const lower = input.toLowerCase();
+  return THEME_COLOR_MAP[lower] || (input.startsWith('#') ? input : '#6C9AC4');
+}
+
 function HomeContent() {
   const searchParams = useSearchParams();
   const themeColor = searchParams.get('themeColor');
   const [items, setItems] = useState<ReadingItem[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
 
-  const pointColor = useMemo(() => {
-    if (!themeColor) return '#6C9AC4';
-    return THEME_COLOR_MAP[themeColor.toLowerCase()] || (themeColor.startsWith('#') ? themeColor : '#6C9AC4');
-  }, [themeColor]);
+  const pointColor = useMemo(() => pickThemeColor(themeColor), [themeColor]);
 
   useEffect(() => {
     fetch('/api/notion').then(res => res.json()).then(data => {
@@ -39,12 +42,18 @@ function HomeContent() {
   const data = items[currentIndex] ?? { title: '', author: '', coverImage: null };
 
   return (
-    /* [핵심] bg-transparent와 함께 opacity-0을 활용해 배경 이질감을 완전히 제거합니다. */
-    <main className="fixed inset-0 flex h-full w-full items-center justify-center bg-transparent p-0 overflow-hidden !shadow-none">
-      {/* 위젯 본체: shadow를 아예 제거하고 테두리만 남겨 다크모드에서도 깔끔하게 만듭니다. */}
-      <div className="flex w-[320px] flex-col items-center rounded-[35px] border border-gray-100/50 bg-white p-6 shadow-none">
+    /* [수정 1] 배경 완전 투명화 (!bg-none), 불필요한 그림자 박멸 */
+    <main className="fixed inset-0 flex h-full w-full items-center justify-center bg-transparent !bg-none p-0 overflow-hidden !shadow-none">
+      
+      {/* [수정 2] 테두리 복구 및 강화
+          - rounded-[35px]: 둥근 테두리 유지
+          - border-2: 테두리 두께 굵게 (또렷하게)
+          - border-gray-200: 라이트모드에서도 잘 보이는 진한 회색 테두리
+          - bg-white: 위젯 본체는 하얀색 고정 (다크모드에서도 본체는 밝게 보임)
+          - shadow-none: 그림자 완전 제거
+      */}
+      <div className="flex w-[320px] flex-col items-center rounded-[35px] border-2 border-gray-200 bg-white p-6 shadow-none overflow-hidden">
         
-        {/* 상단바 */}
         <div className="mb-6 flex w-full items-center justify-between px-1">
           <div className="flex gap-1.5">
             <div className="h-3 w-3 rounded-full bg-[#FF5F57]" />
@@ -55,19 +64,17 @@ function HomeContent() {
           <div className="w-8" />
         </div>
 
-        {/* 커버 이미지 */}
-        <div className="relative mb-6 aspect-square w-full rounded-[40px] overflow-hidden bg-gray-50">
+        <div className="relative mb-6 aspect-square w-full rounded-[40px] overflow-hidden bg-gray-50 shadow-inner">
           {data.coverImage && (
             <div className="relative h-full w-full">
-              <img src={data.coverImage} className="absolute inset-0 h-full w-full object-cover blur-2xl opacity-20 scale-110" alt="" />
+              <img src={data.coverImage} className="absolute inset-0 h-full w-full object-cover blur-2xl opacity-40 scale-110" alt="" />
               <div className="relative h-full w-full p-4 flex items-center justify-center">
-                <img src={data.coverImage} className="h-full w-auto rounded-[20px] object-contain" alt={data.title} />
+                <img src={data.coverImage} className="h-full w-auto rounded-[20px] object-contain shadow-md" alt={data.title} />
               </div>
             </div>
           )}
         </div>
 
-        {/* 정보 및 컨트롤 */}
         <div className="w-full">
           <div className="mb-5 w-full px-2">
             <div className="mb-2 flex justify-between text-[10px] font-medium text-gray-400">
