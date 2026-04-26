@@ -64,7 +64,8 @@ function StackWidgetContent() {
     const item = items[idx];
     const isCenter = offset === 0;
     
-    const cardWidth = isCenter ? '280px' : '220px'; 
+    // 옆 카드들을 조금 더 슬림하게 조정해서 가로 폭 확보
+    const cardWidth = isCenter ? '280px' : '200px'; 
     const scale = isCenter ? 'scale(1)' : 'scale(0.85)';
     const opacity = isCenter ? 1 : 0.3;
     const blur = isCenter ? '0px' : '1.5px';
@@ -107,7 +108,6 @@ function StackWidgetContent() {
           )}
         </div>
 
-        {/* [핵심] min-h 제거, mt 제거 -> 텍스트와 이미지 사이 공간 타이트하게 고정 */}
         <div 
           className="text-center w-full px-4 mt-6 transition-all duration-700"
           style={{ 
@@ -132,10 +132,9 @@ function StackWidgetContent() {
   };
 
   return (
-    // justify-center로 복원하여 위아래 밸런스를 맞춤
     <main className="fixed inset-0 flex items-center justify-center bg-white dark:bg-[#191919] p-0 overflow-hidden !shadow-none">
-      {/* 줌 배율 0.55로 상향, pt 제거, translate 제거 -> 중앙에 꽉 차게 배치 */}
-      <div style={{ zoom: 0.55 }} className="relative flex flex-col items-center justify-center w-full h-full">
+      {/* zoom을 다시 0.5로 낮추어 가로 시야를 확보합니다. */}
+      <div style={{ zoom: 0.5 }} className="relative flex flex-col items-center justify-center w-full h-full">
         
         <div className="absolute top-10 right-10 z-50">
           <button onClick={fetchData} className="p-3 rounded-full hover:bg-black/5 active:scale-90 bg-white/30 dark:bg-white/10 backdrop-blur-md border border-black/5 dark:border-white/10 transition-all">
@@ -143,8 +142,8 @@ function StackWidgetContent() {
           </button>
         </div>
 
-        {/* translate 제거 -> 정중앙 정렬 */}
-        <div className="flex items-center justify-center gap-6 w-full">
+        {/* gap을 6에서 2로 확 줄여서 카드들을 안쪽으로 모읍니다. */}
+        <div className="flex items-center justify-center gap-2 w-full">
           {items.length > 0 ? (
             <>
               {renderBook(-2)}
