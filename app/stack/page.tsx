@@ -41,7 +41,7 @@ function StackWidgetContent() {
     } catch (err) { 
       console.error(err); 
     } finally { 
-      setTimeout(() => setIsRefreshing(false), 500); 
+      setTimeout(() => setIsRefreshing(false), 800); 
     }
   };
 
@@ -128,20 +128,13 @@ function StackWidgetContent() {
   return (
     <main className="fixed inset-0 flex items-center justify-center bg-white dark:bg-[#191919] p-0 overflow-hidden !shadow-none">
       
-      {/* [진짜 크기 수정] zoom을 제거하고, 기기 화면 너비에 반응하는 단위(vw) 적용 */}
-      {/* 이렇게 해야 맥과 아이패드 모두에서 동일하게 작고 정갈한 비율로 보입니다. */}
-      <div 
-        className="absolute top-10 right-10 z-[100] flex items-center justify-center"
-        // vw 단위를 사용하여 화면 너비가 커지면(맥) 자동으로 수치가 계산되어 폰트가 작아지게 설정
-        style={{ fontSize: '1.2vw' }} // 맥에서는 대략 18px~22px 사이로 렌더링됨
-      >
+      {/* [수정] 새로고침 버튼 위치를 '애매한 곳'에서 화면 '맨 구석(top)'으로 고정 */}
+      <div className="absolute top-4 right-4 z-[100]">
         <button 
           onClick={fetchData} 
-          // 버튼 크기와 패딩도 vw 단위를 기준으로 설정
-          className="p-[0.8vw] rounded-full hover:bg-black/5 active:scale-90 bg-white/40 dark:bg-white/10 backdrop-blur-md border border-black/5 dark:border-white/10 transition-all shadow-sm flex items-center justify-center"
+          className="p-2 rounded-full hover:bg-black/5 active:scale-90 bg-white/30 dark:bg-white/10 backdrop-blur-md border border-black/5 dark:border-white/10 transition-all shadow-sm"
         >
-          {/* 아이콘 크기도 vw 단위를 기준으로 설정하여 완벽한 비율 동기화 */}
-          <RotateCw style={{ width: '1.5vw', height: '1.5vw' }} className={`text-gray-500 ${isRefreshing ? 'animate-spin' : ''}`} />
+          <RotateCw size={18} className={`text-gray-400 ${isRefreshing ? 'animate-spin' : ''}`} />
         </button>
       </div>
 
