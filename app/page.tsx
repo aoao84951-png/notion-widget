@@ -8,6 +8,7 @@ type ReadingItem = {
   title: string; author: string | null; coverImage: string | null;
 };
 
+// 포인트 컬러 맵은 유지합니다.
 const THEME_COLOR_MAP: Record<string, string> = {
   sky: '#6C9AC4', pastel: '#8DB4CF', pink: '#DC4B84', dark: '#3A4458',
   wide: '#2E3D6F', purple: '#7B58D3', green: '#44A67B', yellow: '#F0B11D',
@@ -21,7 +22,9 @@ function pickThemeColor(input: string | null) {
 
 function HomeContent() {
   const searchParams = useSearchParams();
+  // bgColor 관련 서치팜은 이제 무시합니다.
   const themeColor = searchParams.get('themeColor');
+  
   const [items, setItems] = useState<ReadingItem[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
 
@@ -42,10 +45,11 @@ function HomeContent() {
   const data = items[currentIndex] ?? { title: '', author: '', coverImage: null };
 
   return (
-    /* [핵심] 배경을 완전히 투명하게 하고, 불필요한 그림자나 여백을 모두 제거합니다. */
+    /* [수정 1] 배경색 변수를 다 지우고 bg-transparent로 고정합니다. */
     <main className="fixed inset-0 flex items-center justify-center bg-transparent p-0 overflow-hidden !shadow-none">
-      {/* 위젯 본체: shadow를 아주 미세하게 조정하고 배경을 깨끗한 흰색으로 고정합니다. */}
-      <div className="flex w-[320px] flex-col items-center rounded-[35px] border border-white/30 bg-white p-6 shadow-[0_10px_30px_rgba(0,0,0,0.1)]">
+      {/* [수정 2] 위젯 본체: 하얀색 유리 느낌(bg-white/95 + backdrop-blur)을 고정으로 줍니다. 
+                 다크 모드에서도 본체는 밝게 보입니다. */}
+      <div className="flex w-[320px] flex-col items-center rounded-[35px] border border-white/20 bg-white/95 p-6 shadow-[0_20px_60px_rgba(0,0,0,0.3)] backdrop-blur-xl">
         
         <div className="mb-6 flex w-full items-center justify-between px-1">
           <div className="flex gap-1.5">
@@ -57,12 +61,12 @@ function HomeContent() {
           <div className="w-8" />
         </div>
 
-        <div className="relative mb-6 aspect-square w-full rounded-[40px] overflow-hidden bg-gray-50">
+        <div className="relative mb-6 aspect-square w-full rounded-[40px] overflow-hidden bg-gray-50/50">
           {data.coverImage && (
             <div className="relative h-full w-full">
               <img src={data.coverImage} className="absolute inset-0 h-full w-full object-cover blur-2xl opacity-40 scale-110" alt="" />
               <div className="relative h-full w-full p-4 flex items-center justify-center">
-                <img src={data.coverImage} className="h-full w-auto rounded-[20px] object-contain shadow-lg" alt={data.title} />
+                <img src={data.coverImage} className="h-full w-auto rounded-[20px] object-contain shadow-2xl" alt={data.title} />
               </div>
             </div>
           )}
@@ -73,7 +77,7 @@ function HomeContent() {
             <span>02:50</span>
             <span>-01:25</span>
           </div>
-          <div className="relative h-[3px] w-full rounded-full bg-gray-100">
+          <div className="relative h-[3px] w-full rounded-full bg-gray-200">
             <div className="absolute h-full w-[70%] rounded-full" style={{ backgroundColor: pointColor }} />
           </div>
         </div>
@@ -91,7 +95,7 @@ function HomeContent() {
 
         <div className="flex w-full items-center gap-3 px-4 pb-2">
           <VolumeX size={12} className="text-gray-400" />
-          <div className="relative h-[3px] flex-grow rounded-full bg-gray-100">
+          <div className="relative h-[3px] flex-grow rounded-full bg-gray-200">
             <div className="absolute h-full w-[40%] rounded-full" style={{ backgroundColor: pointColor }} />
           </div>
           <Volume2 size={12} className="text-gray-400" />
