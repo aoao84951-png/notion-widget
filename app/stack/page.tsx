@@ -63,20 +63,36 @@ function StackWidgetContent() {
     if (idx === -1) return null;
     const item = items[idx];
     const isCenter = offset === 0;
+    
+    const cardWidth = isCenter ? '280px' : '220px'; 
+    const scale = isCenter ? 'scale(1)' : 'scale(0.85)';
+    const opacity = isCenter ? 1 : 0.3;
+    const blur = isCenter ? '0px' : '1.5px';
+    const zIndex = isCenter ? 30 : 10;
+
     const statusLabel = STATUS_TEXT_MAP[item.status || ''] || (item.status?.toUpperCase() || 'UNKNOWN');
 
     return (
-      <div className={`transition-all duration-1000 ease-in-out flex flex-col items-center shrink-0
-        ${isCenter 
-          ? 'z-30 scale-100 opacity-100 w-[280px]' 
-          : 'z-10 scale-[0.8] opacity-15 w-[160px] blur-[3px] pointer-events-none'}`}>
-        
-        <span className={`text-[10px] font-black mb-4 tracking-[0.2em] transition-opacity duration-700 ${isCenter ? 'opacity-100' : 'opacity-0'}`} style={{ color: pointColor }}>
+      <div 
+        className="transition-all duration-1000 ease-in-out flex flex-col items-center shrink-0"
+        style={{ 
+          width: cardWidth,
+          opacity: opacity,
+          zIndex: zIndex,
+          transform: scale,
+          filter: `blur(${blur})`,
+          pointerEvents: isCenter ? 'auto' : 'none'
+        }}
+      >
+        <span 
+          className="text-[12px] font-black mb-4 tracking-[0.2em] transition-opacity duration-700 h-[20px] flex items-center" 
+          style={{ color: pointColor, opacity: isCenter ? 1 : 0 }}
+        >
           {statusLabel}
         </span>
 
         <div 
-          className={`relative w-full aspect-[2/3] overflow-hidden bg-gray-200 transition-all duration-1000 ${isCenter ? 'shadow-[0_30px_60px_rgba(0,0,0,0.3)]' : ''}`}
+          className={`relative w-full aspect-[2/3] overflow-hidden bg-gray-200 transition-all duration-1000 ${isCenter ? 'shadow-[0_40px_80px_rgba(0,0,0,0.3)]' : ''}`}
           style={{ borderRadius: '60px' }} 
         >
           {item.coverImage ? (
@@ -87,47 +103,56 @@ function StackWidgetContent() {
               style={{ borderRadius: '60px' }}
             />
           ) : (
-            <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs">No Cover</div>
+            <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs font-bold bg-gray-100">NO COVER</div>
           )}
         </div>
 
-        <div className={`text-center w-full px-4 mt-8 transition-all duration-700 ${isCenter ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
-          <h2 className="text-[17px] font-black text-[#111] dark:text-gray-100 leading-tight mb-2 break-keep tracking-[0.1em]">
+        <div 
+          className="text-center w-full px-4 mt-8 transition-all duration-700 min-h-[140px]"
+          style={{ 
+            transform: isCenter ? 'translateY(0)' : 'translateY(10px)'
+          }}
+        >
+          <h2 className="text-[18px] font-black text-[#111] dark:text-gray-100 leading-tight mb-2 break-keep tracking-[0.05em] line-clamp-2">
             {item.title}
           </h2>
-          <p className="text-[13px] font-black text-[#888] tracking-[0.1em]">
+          <p className="text-[14px] font-black text-[#888] tracking-[0.05em] truncate mb-6">
             {item.author || '저자 미상'}
           </p>
+
+          {/* 페이지 번호 디자인 수정 */}
+          <div className="flex justify-center w-full" style={{ opacity: isCenter ? 1 : 0 }}>
+             <span className="text-[16px] font-black text-[#555] dark:text-gray-400 tracking-[0.2em]">
+                {currentIndex + 1} / {items.length}
+              </span>
+          </div>
         </div>
       </div>
     );
   };
 
   return (
-    <main className="fixed inset-0 flex items-center justify-center bg-white dark:bg-[#191919] p-0 overflow-hidden !shadow-none">
-      {/* zoom 배율을 0.55로 더 낮춰 전체 크기를 작게 만듭니다. */}
-      <div style={{ zoom: 0.55 }} className="relative flex w-full h-full flex-col items-center justify-center">
+    <main className="fixed inset-0 flex items-center justify-center bg-white dark:bg-[#191919] p-0 overflow-hidden">
+      <div style={{ zoom: 0.5 }} className="relative flex flex-col items-center justify-center w-full h-full">
         
         <div className="absolute top-10 right-10 z-50">
-          <button onClick={fetchData} className="p-2.5 rounded-full hover:bg-black/5 active:scale-90 bg-white/30 dark:bg-white/10 backdrop-blur-md border border-black/5 dark:border-white/10 transition-all">
-            <RotateCw size={18} className={`text-gray-400 ${isRefreshing ? 'animate-spin' : ''}`} />
+          <button onClick={fetchData} className="p-3 rounded-full hover:bg-black/5 active:scale-90 bg-white/30 dark:bg-white/10 backdrop-blur-md border border-black/5 dark:border-white/10 transition-all">
+            <RotateCw size={24} className={`text-gray-400 ${isRefreshing ? 'animate-spin' : ''}`} />
           </button>
         </div>
 
-        <div className="relative flex w-full items-center justify-center gap-10 md:gap-24">
+        <div className="flex items-center justify-center gap-6 w-full translate-y-[-20px]">
           {items.length > 0 ? (
             <>
+              {renderBook(-2)}
               {renderBook(-1)}
               {renderBook(0)}
               {renderBook(1)}
+              {renderBook(2)}
             </>
           ) : (
-            <div className="text-[12px] text-gray-300 font-black tracking-widest animate-pulse">Syncing...</div>
+            <div className="text-[14px] text-gray-300 font-black tracking-widest animate-pulse">Syncing...</div>
           )}
-        </div>
-
-        <div className="absolute bottom-12 text-[10px] font-black text-[#ccc] tracking-[0.4em]">
-           {items.length > 0 ? `${currentIndex + 1} / ${items.length}` : '0 / 0'}
         </div>
       </div>
     </main>
