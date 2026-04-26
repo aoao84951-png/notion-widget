@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, Suspense } from 'react'; // 1. Suspense 추가
 import { Pause, SkipBack, SkipForward, Volume2, VolumeX } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 
@@ -31,7 +31,8 @@ function pickThemeColor(input: string | null) {
   return DEFAULT_THEME_COLOR;
 }
 
-export default function Home() {
+// 2. 기존 Home의 내용을 HomeContent라는 이름으로 옮겼습니다.
+function HomeContent() {
   const searchParams = useSearchParams();
 
   const themeColor = searchParams.get('themeColor');
@@ -99,33 +100,29 @@ export default function Home() {
             <div className="h-3 w-3 rounded-full bg-[#28C840] opacity-30" />
           </div>
           <span className="relative left-[-15px] text-[10px] font-black tracking-[0.2em] text-gray-400">MINIPLAY</span>
-          <div className="w-8" /> {/* 밸런스용 빈 공간 */}
+          <div className="w-8" />
         </div>
 
-        {/* 중앙 이미지 박스 (사파리 버그 해결 및 비율 고정) */}
+        {/* 중앙 이미지 박스 */}
         <div 
           className="relative mb-6 aspect-square w-full max-w-[280px] mx-auto rounded-[40px] border border-white/20 shadow-2xl bg-transparent"
           style={{ 
             overflow: 'hidden', 
-            isolation: 'isolate', // 사파리 둥근 모서리 잔상 해결
-            WebkitMaskImage: '-webkit-radial-gradient(white, black)' // 사파리 마스킹 버그 방지
+            isolation: 'isolate',
+            WebkitMaskImage: '-webkit-radial-gradient(white, black)'
           }}
         >
           {data?.coverImage ? (
             <div className="relative flex h-full w-full items-center justify-center">
-              {/* 레이어 1: 배경 블러 */}
               <img
                 src={data.coverImage}
                 alt=""
                 className="absolute inset-0 h-full w-full object-cover blur-3xl opacity-60 scale-110"
               />
-              
-              {/* 레이어 2: 둥근 테두리 실제 커버 (안 잘리게 세로폭에 맞춤) */}
-              <div className="relative flex h-full w-full items-center justify-center p-3"> {/* p-3으로 여백을 줄여 표지 확대 */}
+              <div className="relative flex h-full w-full items-center justify-center p-3">
                 <img
                   src={data.coverImage}
                   alt={`${data.title} cover`}
-                  // 핵심 수정: object-contain을 다시 써서 안 잘리게 하고, h-full로 세로폭에 꽉 차게!
                   className="h-full w-auto max-w-none rounded-[25px] object-contain drop-shadow-2xl border border-white/15"
                 />
               </div>
@@ -137,7 +134,7 @@ export default function Home() {
           )}
         </div>
 
-        {/* 재생 바 & 시간 */}
+        {/* 곡 정보/재생바/버튼 등 하단 영역 */}
         <div className="mb-5 w-full px-2">
           <div className="mb-2 flex justify-between text-[10px] font-medium text-gray-400">
             <span>02:50</span>
@@ -149,7 +146,6 @@ export default function Home() {
           </div>
         </div>
 
-        {/* 곡 정보 (제목/저자) */}
         <div className="mb-8 text-center">
           <h2 className="flex items-center justify-center gap-1 text-sm font-semibold text-gray-700">
             {data?.title}
@@ -159,14 +155,12 @@ export default function Home() {
           {error && <p className="mt-2 max-w-[250px] text-[11px] text-[#D9534F]">{error}</p>}
         </div>
 
-        {/* 재생 컨트롤 버튼 */}
         <div className="mb-8 flex items-center gap-8">
           <SkipBack size={24} className="fill-gray-400 text-gray-400" />
           <Pause size={32} style={{ color: pointColor, fill: pointColor }} />
           <SkipForward size={24} className="fill-gray-400 text-gray-400" />
         </div>
 
-        {/* 하단 볼륨 바 */}
         <div className="flex w-full items-center gap-3 px-4">
           <VolumeX size={12} className="text-gray-400" />
           <div className="relative h-[3px] flex-grow rounded-full bg-gray-200">
@@ -177,5 +171,14 @@ export default function Home() {
         </div>
       </div>
     </main>
+  );
+}
+
+// 3. 마지막에 Suspense로 감싼 진짜 Home을 내보냅니다.
+export default function Home() {
+  return (
+    <Suspense fallback={null}>
+      <HomeContent />
+    </Suspense>
   );
 }
