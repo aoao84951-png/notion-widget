@@ -128,8 +128,8 @@ function StackWidgetContent() {
   return (
     <main className="fixed inset-0 flex items-center justify-center bg-white dark:bg-[#191919] p-0 overflow-hidden !shadow-none">
       
-      {/* 새로고침 버튼: 진짜 작고(24px) 정갈하게 우측 상단 끝에 박음 */}
-      <div className="absolute top-3 right-3 z-[100]">
+      {/* [위치 수정] right-3에서 left-3으로 변경하여 왼쪽 위 끝으로 이동 */}
+      <div className="absolute top-3 left-3 z-[100]">
         <button 
           onClick={fetchData} 
           className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-black/5 active:scale-90 bg-white/20 dark:bg-white/5 backdrop-blur-sm border border-black/5 dark:border-white/5 transition-all shadow-none"
