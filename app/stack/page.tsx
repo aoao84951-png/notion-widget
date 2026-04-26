@@ -127,19 +127,20 @@ function StackWidgetContent() {
 
   return (
     <main className="fixed inset-0 flex items-center justify-center bg-white dark:bg-[#191919] p-0 overflow-hidden !shadow-none">
-      {/* zoom 대신 transform scale을 사용하여 모든 기기에서 동일한 비율 강제 */}
+      {/* 1. min-w를 1400px로 넉넉하게 주어 양 끝 카드가 잘리지 않게 합니다. */}
       <div 
-        style={{ transform: 'scale(0.5)', transformOrigin: 'center' }} 
-        className="relative flex flex-col items-center justify-center min-w-[1200px] h-full"
+        style={{ transform: 'scale(0.5)', transformOrigin: 'center center' }} 
+        className="relative flex flex-col items-center justify-center min-w-[1400px] h-full"
       >
-        <div className="absolute top-10 right-10 z-50">
+        
+        {/* 2. 새로고침 버튼 위치를 상단 우측 끝으로 다시 고정합니다. */}
+        <div className="absolute top-[-50px] right-[50px] z-50">
           <button onClick={fetchData} className="p-3 rounded-full hover:bg-black/5 active:scale-90 bg-white/30 dark:bg-white/10 backdrop-blur-md border border-black/5 dark:border-white/10 transition-all">
-            <RotateCw size={24} className={`text-gray-400 ${isRefreshing ? 'animate-spin' : ''}`} />
+            <RotateCw size={28} className={`text-gray-400 ${isRefreshing ? 'animate-spin' : ''}`} />
           </button>
         </div>
 
-        {/* gap-8로 간격을 충분히 벌려도 0.5배 축소되므로 잘리지 않습니다. */}
-        <div className="flex items-center justify-center gap-8 w-full">
+        <div className="flex items-center justify-center gap-12 w-full">
           {items.length > 0 ? (
             <>
               {renderBook(-2)}
