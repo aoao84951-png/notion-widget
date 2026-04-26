@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState, Suspense } from 'react';
-import { Pause, SkipBack, SkipForward, Volume2, VolumeX, RotateCw } from 'lucide-react';
+import { Pause, SkipBack, SkipForward, Volume2, RotateCw } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 
 type ReadingItem = {
@@ -22,8 +22,7 @@ function HomeContent() {
 
   const pointColor = useMemo(() => {
     if (!themeColor) return '#6C9AC4';
-    const lower = themeColor.toLowerCase();
-    return THEME_COLOR_MAP[lower] || (themeColor.startsWith('#') ? themeColor : '#6C9AC4');
+    return THEME_COLOR_MAP[themeColor.toLowerCase()] || (themeColor.startsWith('#') ? themeColor : '#6C9AC4');
   }, [themeColor]);
 
   const fetchData = async () => {
@@ -32,17 +31,11 @@ function HomeContent() {
       const response = await fetch('/api/notion', { cache: 'no-store' });
       const data = await response.json();
       setItems(Array.isArray(data?.items) ? data.items : []);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setTimeout(() => setIsRefreshing(false), 500);
-    }
+    } catch (err) { console.error(err); } 
+    finally { setTimeout(() => setIsRefreshing(false), 500); }
   };
 
-  useEffect(() => {
-    fetchData();
-  }, []);
-
+  useEffect(() => { fetchData(); }, []);
   useEffect(() => {
     if (items.length <= 1) return;
     const timer = setInterval(() => setCurrentIndex(prev => (prev + 1) % items.length), 5000);
@@ -54,81 +47,84 @@ function HomeContent() {
   const currentNumber = totalItems > 0 ? currentIndex + 1 : 0;
 
   return (
-    /* 모드별 배경색 자동 전환 유지 */
-    <main className="fixed inset-0 flex h-full w-full items-center justify-center bg-white dark:bg-[#191919] p-0 overflow-hidden shadow-none transition-colors duration-300">
+    <main className="fixed inset-0 flex h-full w-full items-center justify-center bg-white dark:bg-[#191919] p-0 overflow-hidden transition-colors duration-300">
       
-      {/* [수정] 위젯 전체 너비를 320px에서 280px로 줄이고 패딩을 조정했습니다. */}
-      <div className="relative flex w-[280px] flex-col items-center rounded-[30px] border-2 border-gray-200 bg-white p-5 shadow-none overflow-hidden">
+      {/* 콤팩트 미니 사이즈 (230px) 유지 */}
+      <div className="relative flex w-[230px] flex-col items-center rounded-[10px] bg-[#F2F2F2] p-3 shadow-[0_8px_25px_rgba(0,0,0,0.1)] border border-black/5 overflow-hidden">
         
-        {/* 상단바: 간격 조정 */}
-        <div className="mb-4 flex w-full items-center justify-between px-1">
+        {/* 상단바: 맥 스타일 */}
+        <div className="mb-2.5 flex w-full items-center justify-between px-0.5 relative">
           <div className="flex gap-1">
-            <div className="h-2.5 w-2.5 rounded-full bg-[#FF5F57]" />
-            <div className="h-2.5 w-2.5 rounded-full bg-[#FEBC2E]" />
-            <div className="h-2.5 w-2.5 rounded-full bg-[#28C840] opacity-30" />
+            <div className="h-2 w-2 rounded-full bg-[#FF5F57]" />
+            <div className="h-2 w-2 rounded-full bg-[#FEBC2E]" />
+            <div className="h-2 w-2 rounded-full bg-[#28C840] opacity-20" />
           </div>
-          <span className="text-[9px] font-black tracking-[0.2em] text-gray-400">MINIPLAY</span>
+          <span className="text-[8px] font-black tracking-[0.1em] text-gray-400 absolute left-1/2 -translate-x-1/2 uppercase">MINIPLAY</span>
           
-          <button 
-            onClick={fetchData}
-            className="p-1 rounded-full hover:bg-gray-100 transition-all active:scale-95"
-            title="새로고침"
-          >
-            <RotateCw size={12} className={`text-gray-400 ${isRefreshing ? 'animate-spin' : ''}`} />
+          <button onClick={fetchData} className="p-0.5 rounded-full hover:bg-black/5 active:scale-90">
+            <RotateCw size={10} className={`text-gray-400 ${isRefreshing ? 'animate-spin' : ''}`} />
           </button>
         </div>
 
-        {/* 커버 이미지: 너비에 맞춰 크기 축소 */}
-        <div className="relative mb-5 aspect-square w-full rounded-[30px] overflow-hidden bg-gray-50 shadow-inner">
+        {/* 커버 이미지 */}
+        <div className="relative mb-3 aspect-square w-full rounded-[4px] overflow-hidden bg-white shadow-[0_2px_10px_rgba(0,0,0,0.1)]">
           {data.coverImage && (
-            <div className="relative h-full w-full">
-              <img src={data.coverImage} className="absolute inset-0 h-full w-full object-cover blur-2xl opacity-40 scale-110" alt="" />
-              <div className="relative h-full w-full p-3 flex items-center justify-center">
-                <img src={data.coverImage} className="h-full w-auto rounded-[15px] object-contain shadow-xl" alt={data.title} />
-              </div>
-            </div>
+            <img src={data.coverImage} className="h-full w-full object-cover" alt={data.title} />
           )}
         </div>
 
-        <div className="w-full">
+        <div className="w-full flex flex-col items-center">
+          
           {/* 프로그레스 바 영역 */}
-          <div className="mb-4 w-full px-1">
-            <div className="mb-1.5 flex justify-between text-[9px] font-medium text-gray-400">
+          <div className="mb-3 w-full">
+            <div className="flex justify-between text-[7px] font-medium text-gray-400 mb-0.5 px-0.5">
               <span>02:50</span>
               <span>-01:25</span>
             </div>
-            <div className="relative h-[2px] w-full rounded-full bg-gray-100">
-              <div className="absolute h-full w-[70%] rounded-full" style={{ backgroundColor: pointColor }} />
+            <div className="relative h-[2px] w-full rounded-full bg-gray-300/40">
+              <div className="absolute h-full rounded-full bg-[#555]" style={{ width: '70%' }} />
+              {/* 포인트 컬러 노브 */}
+              <div className="absolute top-1/2 -translate-y-1/2 h-2 w-2 rounded-full bg-white shadow-md border border-black/5 left-[70%] z-10" />
+              <div className="absolute top-1/2 -translate-y-1/2 h-1 w-1 rounded-full left-[70%] -translate-x-1/2 z-20" style={{ backgroundColor: pointColor }} />
             </div>
           </div>
 
-          {/* 텍스트 정보: 폰트 크기 및 간격 미세 조정 */}
-          <div className="mb-6 text-center px-1">
-            <h2 className="text-[13px] font-bold text-gray-800 break-words whitespace-normal leading-snug">
+          {/* [수정] 제목 및 저자 정보 영역 */}
+          <div className="mb-3 text-center px-1 w-full">
+            {/* 제목: 줄바꿈 허용 (break-words) */}
+            <h2 className="text-[11px] font-bold text-[#333] leading-tight break-words whitespace-normal mb-0.5">
               {data.title || '로딩 중...'}
             </h2>
-            <p className="mt-0.5 text-[10px] text-gray-500">{data.author || '저자 미상'}</p>
+            
+            {/* 저자명 */}
+            <p className="text-[9px] text-[#888] font-medium leading-tight line-clamp-1">
+              {data.author || 'Unknown Author'}
+            </p>
+            
+            {/* [수정] 페이지 번호: 저자명 아래쪽으로 독립 배치 */}
             {totalItems > 0 && (
-              <p className="mt-1 text-[9px] font-medium text-gray-400">
+              <p className="text-[8px] text-[#aaa] font-bold mt-0.5">
                 ({currentNumber} / {totalItems})
               </p>
             )}
           </div>
 
-          {/* 컨트롤 버튼: 크기 축소 */}
-          <div className="mb-6 flex items-center justify-center gap-6 text-gray-400">
-            <SkipBack size={20} className="fill-current" />
-            <Pause size={28} style={{ color: pointColor, fill: pointColor }} />
-            <SkipForward size={20} className="fill-current" />
+          {/* 컨트롤 영역 */}
+          <div className="mb-3 flex items-center justify-center gap-7 text-[#555]">
+            <SkipBack size={16} className="fill-current" />
+            <Pause size={24} className="fill-current" />
+            <SkipForward size={16} className="fill-current" />
           </div>
 
-          {/* 볼륨 바 영역 */}
-          <div className="flex w-full items-center gap-2 px-3 pb-1">
-            <VolumeX size={10} className="text-gray-400" />
-            <div className="relative h-[2px] flex-grow rounded-full bg-gray-100">
-              <div className="absolute h-full w-[40%] rounded-full" style={{ backgroundColor: pointColor }} />
+          {/* 볼륨 영역 */}
+          <div className="flex w-full items-center gap-1.5 px-0.5 pb-0.5">
+            <Volume2 size={10} className="text-[#888]" />
+            <div className="relative h-[2px] flex-grow rounded-full bg-gray-300/40">
+              <div className="absolute h-full rounded-full bg-[#555]" style={{ width: '40%' }} />
+              <div className="absolute top-1/2 -translate-y-1/2 h-1.5 w-1.5 rounded-full bg-white shadow-sm border border-black/5 left-[40%] z-10" />
+              <div className="absolute top-1/2 -translate-y-1/2 h-0.5 w-0.5 rounded-full left-[40%] -translate-x-1/2 z-20" style={{ backgroundColor: pointColor }} />
             </div>
-            <Volume2 size={10} className="text-gray-400" />
+            <Volume2 size={10} className="text-[#888] opacity-50" />
           </div>
         </div>
       </div>
