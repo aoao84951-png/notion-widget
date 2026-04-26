@@ -127,16 +127,18 @@ function StackWidgetContent() {
 
   return (
     <main className="fixed inset-0 flex items-center justify-center bg-white dark:bg-[#191919] p-0 overflow-hidden !shadow-none">
-      {/* 1. min-w를 1400px로 넉넉하게 주어 양 끝 카드가 잘리지 않게 합니다. */}
       <div 
         style={{ transform: 'scale(0.5)', transformOrigin: 'center center' }} 
         className="relative flex flex-col items-center justify-center min-w-[1400px] h-full"
       >
         
-        {/* 2. 새로고침 버튼 위치를 상단 우측 끝으로 다시 고정합니다. */}
-        <div className="absolute top-[-50px] right-[50px] z-50">
-          <button onClick={fetchData} className="p-3 rounded-full hover:bg-black/5 active:scale-90 bg-white/30 dark:bg-white/10 backdrop-blur-md border border-black/5 dark:border-white/10 transition-all">
-            <RotateCw size={28} className={`text-gray-400 ${isRefreshing ? 'animate-spin' : ''}`} />
+        {/* 새로고침 버튼 위치 조정: 다섯 번째 표지 위쪽으로 배치 */}
+        <div className="absolute top-[80px] right-[160px] z-50">
+          <button 
+            onClick={fetchData} 
+            className="p-3 rounded-full hover:bg-black/5 active:scale-90 bg-white/20 dark:bg-white/5 backdrop-blur-lg border border-black/5 dark:border-white/10 transition-all shadow-sm"
+          >
+            <RotateCw size={24} className={`text-gray-400 ${isRefreshing ? 'animate-spin' : ''}`} />
           </button>
         </div>
 
