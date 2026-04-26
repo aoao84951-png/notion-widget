@@ -63,6 +63,7 @@ function StackWidgetContent() {
     if (idx === -1) return null;
     const item = items[idx];
     const isCenter = offset === 0;
+    const isLast = offset === 2; // 다섯 번째 카드 판별
     
     const cardWidth = isCenter ? '280px' : '220px'; 
     const scale = isCenter ? 'scale(1)' : 'scale(0.85)';
@@ -74,16 +75,28 @@ function StackWidgetContent() {
 
     return (
       <div 
-        className="transition-all duration-1000 ease-in-out flex flex-col items-center shrink-0"
+        className="relative transition-all duration-1000 ease-in-out flex flex-col items-center shrink-0"
         style={{ 
           width: cardWidth,
           opacity: opacity,
           zIndex: zIndex,
           transform: scale,
           filter: `blur(${blur})`,
-          pointerEvents: isCenter ? 'auto' : 'none'
+          pointerEvents: (isCenter || isLast) ? 'auto' : 'none'
         }}
       >
+        {/* [해결] 다섯 번째 카드 영역 바로 위에 버튼 배치 */}
+        {isLast && (
+          <div className="absolute top-[-40px] left-1/2 -translate-x-1/2 translate-y-[-100%] z-[100]">
+            <button 
+              onClick={fetchData} 
+              className="p-4 rounded-full hover:bg-black/5 active:scale-90 bg-white/50 dark:bg-white/10 backdrop-blur-xl border border-black/5 dark:border-white/10 transition-all shadow-md"
+            >
+              <RotateCw size={32} className={`text-gray-600 ${isRefreshing ? 'animate-spin' : ''}`} />
+            </button>
+          </div>
+        )}
+
         <span 
           className="text-[12px] font-black mb-4 tracking-[0.2em] transition-opacity duration-700 h-[20px] flex items-center" 
           style={{ color: pointColor, opacity: isCenter ? 1 : 0 }}
@@ -131,17 +144,6 @@ function StackWidgetContent() {
         style={{ transform: 'scale(0.5)', transformOrigin: 'center center' }} 
         className="relative flex flex-col items-center justify-center min-w-[1400px] h-full"
       >
-        
-        {/* 새로고침 버튼 위치 조정: 다섯 번째 표지 위쪽으로 배치 */}
-        <div className="absolute top-[80px] right-[160px] z-50">
-          <button 
-            onClick={fetchData} 
-            className="p-3 rounded-full hover:bg-black/5 active:scale-90 bg-white/20 dark:bg-white/5 backdrop-blur-lg border border-black/5 dark:border-white/10 transition-all shadow-sm"
-          >
-            <RotateCw size={24} className={`text-gray-400 ${isRefreshing ? 'animate-spin' : ''}`} />
-          </button>
-        </div>
-
         <div className="flex items-center justify-center gap-12 w-full">
           {items.length > 0 ? (
             <>
