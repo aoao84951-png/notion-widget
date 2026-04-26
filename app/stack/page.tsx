@@ -63,7 +63,6 @@ function StackWidgetContent() {
     if (idx === -1) return null;
     const item = items[idx];
     const isCenter = offset === 0;
-    const isLast = offset === 2; // 다섯 번째 카드 판별
     
     const cardWidth = isCenter ? '280px' : '220px'; 
     const scale = isCenter ? 'scale(1)' : 'scale(0.85)';
@@ -75,28 +74,16 @@ function StackWidgetContent() {
 
     return (
       <div 
-        className="relative transition-all duration-1000 ease-in-out flex flex-col items-center shrink-0"
+        className="transition-all duration-1000 ease-in-out flex flex-col items-center shrink-0"
         style={{ 
           width: cardWidth,
           opacity: opacity,
           zIndex: zIndex,
           transform: scale,
           filter: `blur(${blur})`,
-          pointerEvents: (isCenter || isLast) ? 'auto' : 'none'
+          pointerEvents: isCenter ? 'auto' : 'none'
         }}
       >
-        {/* [해결] 다섯 번째 카드 영역 바로 위에 버튼 배치 */}
-        {isLast && (
-          <div className="absolute top-[-40px] left-1/2 -translate-x-1/2 translate-y-[-100%] z-[100]">
-            <button 
-              onClick={fetchData} 
-              className="p-4 rounded-full hover:bg-black/5 active:scale-90 bg-white/50 dark:bg-white/10 backdrop-blur-xl border border-black/5 dark:border-white/10 transition-all shadow-md"
-            >
-              <RotateCw size={32} className={`text-gray-600 ${isRefreshing ? 'animate-spin' : ''}`} />
-            </button>
-          </div>
-        )}
-
         <span 
           className="text-[12px] font-black mb-4 tracking-[0.2em] transition-opacity duration-700 h-[20px] flex items-center" 
           style={{ color: pointColor, opacity: isCenter ? 1 : 0 }}
@@ -120,7 +107,7 @@ function StackWidgetContent() {
           )}
         </div>
 
-        <div className="text-center w-full px-4 mt-6 transition-all duration-700">
+        <div className="text-center w-full px-4 mt-8 transition-all duration-700">
           <h2 className="text-[18px] font-black text-[#111] dark:text-gray-100 leading-tight mb-2 break-keep tracking-[0.05em] line-clamp-2">
             {item.title}
           </h2>
@@ -139,7 +126,17 @@ function StackWidgetContent() {
   };
 
   return (
+    // justify-center로 위아래 중앙 정렬 복원
     <main className="fixed inset-0 flex items-center justify-center bg-white dark:bg-[#191919] p-0 overflow-hidden !shadow-none">
+      
+      {/* [수정] 새로고침 버튼을 scale의 영향을 받지 않는 최상위 컨테이너에 배치 */}
+      {/* 이렇게 해야 기기/창 크기에 상관없이 항상 우측 상단 구석에 고정됩니다. */}
+      <div className="absolute top-10 right-10 z-[100]">
+        <button onClick={fetchData} className="p-3 rounded-full hover:bg-black/5 active:scale-90 bg-white/30 dark:bg-white/10 backdrop-blur-md border border-black/5 dark:border-white/10 transition-all shadow-sm">
+          <RotateCw size={24} className={`text-gray-400 ${isRefreshing ? 'animate-spin' : ''}`} />
+        </button>
+      </div>
+
       <div 
         style={{ transform: 'scale(0.5)', transformOrigin: 'center center' }} 
         className="relative flex flex-col items-center justify-center min-w-[1400px] h-full"
