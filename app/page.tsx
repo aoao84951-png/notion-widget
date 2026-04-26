@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState, Suspense } from 'react'; // 1. Suspense 추가
+import { useEffect, useMemo, useState, Suspense } from 'react';
 import { Pause, SkipBack, SkipForward, Volume2, VolumeX } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 
@@ -31,7 +31,6 @@ function pickThemeColor(input: string | null) {
   return DEFAULT_THEME_COLOR;
 }
 
-// 2. 기존 Home의 내용을 HomeContent라는 이름으로 옮겼습니다.
 function HomeContent() {
   const searchParams = useSearchParams();
 
@@ -44,7 +43,6 @@ function HomeContent() {
   const [error, setError] = useState('');
 
   const pointColor = useMemo(() => pickThemeColor(themeColor), [themeColor]);
-  const backgroundColor = darkMode ? '#191919' : '#E5E7EB';
 
   useEffect(() => {
     const fetchData = async () => {
@@ -90,9 +88,10 @@ function HomeContent() {
   const data = currentItem;
 
   return (
-    <main className="flex min-h-screen items-center justify-center p-4" style={{ backgroundColor }}>
-      <div className="flex w-[320px] flex-col items-center rounded-[35px] border border-white/50 bg-white/80 p-6 shadow-2xl backdrop-blur-md">
-        {/* 상단 윈도우 컨트롤 & 제목 */}
+    // 배경을 투명하게(bg-transparent)하고, 전체 화면 높이(min-h-screen)를 제거했습니다.
+    <main className="flex min-h-[400px] w-full items-center justify-center bg-transparent p-2">
+      <div className="flex w-[300px] flex-col items-center rounded-[35px] border border-white/50 bg-white/90 p-6 shadow-2xl backdrop-blur-md">
+        {/* 상단 윈도우 컨트롤 */}
         <div className="mb-6 flex w-full items-center justify-between px-1">
           <div className="flex gap-1.5">
             <div className="h-3 w-3 rounded-full bg-[#FF5F57]" />
@@ -103,9 +102,9 @@ function HomeContent() {
           <div className="w-8" />
         </div>
 
-        {/* 중앙 이미지 박스 */}
+        {/* 커버 이미지 박스 */}
         <div 
-          className="relative mb-6 aspect-square w-full max-w-[280px] mx-auto rounded-[40px] border border-white/20 shadow-2xl bg-transparent"
+          className="relative mb-6 aspect-square w-full max-w-[260px] mx-auto rounded-[40px] border border-white/20 shadow-2xl bg-transparent"
           style={{ 
             overflow: 'hidden', 
             isolation: 'isolate',
@@ -134,7 +133,7 @@ function HomeContent() {
           )}
         </div>
 
-        {/* 곡 정보/재생바/버튼 등 하단 영역 */}
+        {/* 정보 및 컨트롤 */}
         <div className="mb-5 w-full px-2">
           <div className="mb-2 flex justify-between text-[10px] font-medium text-gray-400">
             <span>02:50</span>
@@ -147,34 +146,30 @@ function HomeContent() {
         </div>
 
         <div className="mb-8 text-center">
-          <h2 className="flex items-center justify-center gap-1 text-sm font-semibold text-gray-700">
-            {data?.title}
-          </h2>
-          <p className="mt-1 text-[11px] text-gray-500">{data?.author || '로딩 중...'}</p>
+          <h2 className="text-sm font-semibold text-gray-700">{data?.title}</h2>
+          <p className="mt-1 text-[11px] text-gray-500">{data?.author}</p>
           {items.length > 1 && <p className="mt-1 text-[10px] text-gray-400">({currentIndex + 1} / {items.length})</p>}
-          {error && <p className="mt-2 max-w-[250px] text-[11px] text-[#D9534F]">{error}</p>}
+          {error && <p className="mt-2 text-[10px] leading-tight text-red-500">{error}</p>}
         </div>
 
         <div className="mb-8 flex items-center gap-8">
-          <SkipBack size={24} className="fill-gray-400 text-gray-400" />
-          <Pause size={32} style={{ color: pointColor, fill: pointColor }} />
-          <SkipForward size={24} className="fill-gray-400 text-gray-400" />
+          <SkipBack size={20} className="fill-gray-400 text-gray-400" />
+          <Pause size={28} style={{ color: pointColor, fill: pointColor }} />
+          <SkipForward size={20} className="fill-gray-400 text-gray-400" />
         </div>
 
         <div className="flex w-full items-center gap-3 px-4">
-          <VolumeX size={12} className="text-gray-400" />
-          <div className="relative h-[3px] flex-grow rounded-full bg-gray-200">
+          <VolumeX size={10} className="text-gray-400" />
+          <div className="relative h-[2px] flex-grow rounded-full bg-gray-200">
             <div className="absolute left-0 top-0 h-full w-[40%] rounded-full" style={{ backgroundColor: pointColor }} />
-            <div className="absolute left-[40%] top-1/2 h-2 w-2 -translate-y-1/2 rounded-full border border-gray-200 bg-white shadow-sm" />
           </div>
-          <Volume2 size={12} className="text-gray-400" />
+          <Volume2 size={10} className="text-gray-400" />
         </div>
       </div>
     </main>
   );
 }
 
-// 3. 마지막에 Suspense로 감싼 진짜 Home을 내보냅니다.
 export default function Home() {
   return (
     <Suspense fallback={null}>
