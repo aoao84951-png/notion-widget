@@ -128,13 +128,13 @@ function StackWidgetContent() {
   return (
     <main className="fixed inset-0 flex items-center justify-center bg-white dark:bg-[#191919] p-0 overflow-hidden !shadow-none">
       
-      {/* [수정] 새로고침 버튼 크기를 대폭 축소하고 우측 상단 고정 */}
-      <div className="absolute top-6 right-6 z-[100]">
+      {/* [버튼 크기 복구] 윗 스택처럼 작고 정갈하게 수정 */}
+      <div className="absolute top-10 right-10 z-[100]">
         <button 
           onClick={fetchData} 
           className="p-2.5 rounded-full hover:bg-black/5 active:scale-90 bg-white/40 dark:bg-white/10 backdrop-blur-md border border-black/5 dark:border-white/10 transition-all shadow-sm"
         >
-          <RotateCw size={20} className={`text-gray-400 ${isRefreshing ? 'animate-spin' : ''}`} />
+          <RotateCw size={24} className={`text-gray-400 ${isRefreshing ? 'animate-spin' : ''}`} />
         </button>
       </div>
 
