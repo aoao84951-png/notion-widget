@@ -85,8 +85,12 @@ function StackWidgetContent() {
         }}
       >
         <span 
-          className="text-[12px] font-black mb-4 tracking-[0.2em] transition-opacity duration-700 h-[20px] flex items-center" 
-          style={{ color: pointColor, opacity: isCenter ? 1 : 0 }}
+          className="font-black mb-4 tracking-[0.2em] transition-opacity duration-700 h-[20px] flex items-center" 
+          style={{ 
+            color: pointColor, 
+            opacity: isCenter ? 1 : 0,
+            fontSize: 'min(12px, 2.5vw)' // 화면이 작아지면 글씨도 작아지게 설정
+          }}
         >
           {statusLabel}
         </span>
@@ -108,28 +112,28 @@ function StackWidgetContent() {
         </div>
 
         <div 
-          className="text-center w-full px-3 mt-6 transition-all duration-700"
+          className="text-center w-full px-4 mt-6 transition-all duration-700"
           style={{ 
             transform: isCenter ? 'translateY(0)' : 'translateY(10px)'
           }}
         >
-          {/* 제목: 아이패드에서 너무 커지지 않게 17px로 상한선을 두고 2줄 제한 */}
+          {/* 제목: 가로 너비의 4% 크기로 반응하되, 최대 18px까지만 커짐 */}
           <h2 
-            className="font-black text-[#111] dark:text-gray-100 leading-tight mb-1 break-keep tracking-[0.05em] line-clamp-2 overflow-hidden"
-            style={{ fontSize: isCenter ? '17px' : '13px' }}
+            className="font-black text-[#111] dark:text-gray-100 leading-tight mb-1 break-keep tracking-[0.05em] line-clamp-2"
+            style={{ fontSize: isCenter ? 'min(18px, 4.5vw)' : 'min(14px, 3.5vw)' }}
           >
             {item.title}
           </h2>
-          {/* 저자: 제목보다 작게 설정 */}
+          {/* 저자: 가로 너비의 3% 크기로 반응 */}
           <p 
             className="font-black text-[#888] tracking-[0.05em] truncate mb-3"
-            style={{ fontSize: isCenter ? '13px' : '10px' }}
+            style={{ fontSize: isCenter ? 'min(14px, 3.5vw)' : 'min(11px, 3vw)' }}
           >
             {item.author || '저자 미상'}
           </p>
 
           <div className="flex justify-center w-full" style={{ opacity: isCenter ? 1 : 0 }}>
-             <span className="font-black text-[#555] dark:text-gray-400 tracking-[0.2em]" style={{ fontSize: '15px' }}>
+             <span className="font-black text-[#555] dark:text-gray-400 tracking-[0.2em]" style={{ fontSize: 'min(16px, 4vw)' }}>
                 {currentIndex + 1} / {items.length}
               </span>
           </div>
