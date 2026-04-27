@@ -59,19 +59,20 @@ function StackWidgetContent() {
 
   useEffect(() => { fetchData(); }, []);
 
+  // [속도 조정] 무한 루프 워프 타이머를 700ms -> 500ms로 단축
   useEffect(() => {
     if (items.length === 0) return;
     if (currentIndex >= items.length * 2) {
       const timer = setTimeout(() => {
         setIsTransitioning(false);
         setCurrentIndex(items.length);
-      }, 700);
+      }, 500); // 속도 UP
       return () => clearTimeout(timer);
     } else if (currentIndex < items.length) {
       const timer = setTimeout(() => {
         setIsTransitioning(false);
         setCurrentIndex(currentIndex + items.length);
-      }, 700);
+      }, 500); // 속도 UP
       return () => clearTimeout(timer);
     }
   }, [currentIndex, items.length]);
@@ -114,7 +115,8 @@ function StackWidgetContent() {
     return (
       <div 
         key={`book-${index}`}
-        className={`flex flex-col items-center shrink-0 select-none ${isTransitioning ? 'transition-all duration-700 ease-out' : ''}`}
+        // [속도 조정] css transition 시간을 700ms -> 500ms로 단축
+        className={`flex flex-col items-center shrink-0 select-none ${isTransitioning ? 'transition-all duration-500 ease-out' : ''}`}
         style={{ width: '300px', opacity, transform: scale, filter: `blur(${blur})`, zIndex: isCenter ? 30 : 10 }}
       >
         <span className="text-[12px] font-black mb-4 tracking-[0.2em] h-[20px] flex items-center" style={{ color: pointColor, opacity: isCenter ? 1 : 0 }}>
@@ -125,13 +127,11 @@ function StackWidgetContent() {
           {item.coverImage ? (
             <img src={item.coverImage} className="w-full h-full object-cover block pointer-events-none" alt={item.title} style={{ borderRadius: '60px' }} />
           ) : (
-            /* [NO COVER 정교화] - 깨지는 배경 텍스트 효과 삭제 및 디자인 단순화 */
+            /* [디자인 수정] 'NO COVER' 디자인 단순화 - 커버 안 제목 삭제 */
             <div className="w-full h-full bg-[#F2F2F2] dark:bg-[#1A1A1A] relative" style={{ borderRadius: '60px' }}>
               <div className="absolute inset-0 flex flex-col items-center justify-center p-10">
-                {/* 정갈한 NO COVER 문구 */}
-                <span className="text-[14px] font-black text-gray-400 dark:text-gray-600 tracking-[0.4em] uppercase mb-6">NO COVER</span>
-                {/* 실제 제목 텍스트 */}
-                <span className="text-[20px] font-black text-gray-700 dark:text-gray-300 leading-tight text-center break-keep line-clamp-4">{item.title}</span>
+                {/* 제목을 삭제하고 NO COVER 문구만 정갈하게 배치 */}
+                <span className="text-[14px] font-black text-gray-400 dark:text-gray-600 tracking-[0.4em] uppercase">NO COVER</span>
               </div>
             </div>
           )}
@@ -159,8 +159,11 @@ function StackWidgetContent() {
       </div>
       <div style={{ transform: 'scale(0.5)', transformOrigin: 'center center' }} className="relative flex flex-col items-center justify-center w-full h-full">
         {items.length > 0 ? (
-          <div className={`flex items-center ${isTransitioning ? 'transition-transform duration-700 ease-out' : ''}`}
-            style={{ transform: `translateX(calc(50% - (300px * ${currentIndex}) - 150px))` }}>
+          <div 
+            // [속도 조정] css transition 시간을 700ms -> 500ms로 단축
+            className={`flex items-center ${isTransitioning ? 'transition-transform duration-500 ease-out' : ''}`}
+            style={{ transform: `translateX(calc(50% - (300px * ${currentIndex}) - 150px))` }}
+          >
             {extendedItems.map((item, index) => renderBook(item, index))}
           </div>
         ) : (
