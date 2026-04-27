@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState, Suspense } from 'react';
+import { useEffect, useMemo, useState, Suspense, useRef } from 'react';
 import { RotateCw } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 
@@ -26,6 +26,11 @@ function StackWidgetContent() {
   const [items, setItems] = useState<BookItem[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  
+  // 드래그 및 자동재생 제어를 위한 Ref
+  const [isPaused, setIsPaused] = useState(false);
+  const dragStartX = useRef<number | null>(null);
+  const autoPlayTimer = useRef<NodeJS.Timeout | null>(null);
 
   const pointColor = useMemo(() => {
     if (!themeColor) return '#6C9AC4';
@@ -45,13 +50,49 @@ function StackWidgetContent() {
     }
   };
 
+  // 자동 재생 로직 (조작 중일 때는 멈춤)
+  const startAutoPlay = () => {
+    stopAutoPlay();
+    autoPlayTimer.current = setInterval(() => {
+      setCurrentIndex(prev => (prev + 1) % items.length);
+    }, 5000);
+  };
+
+  const stopAutoPlay = () => {
+    if (autoPlayTimer.current) clearInterval(autoPlayTimer.current);
+  };
+
   useEffect(() => { fetchData(); }, []);
-  
+
   useEffect(() => {
-    if (items.length <= 1) return;
-    const timer = setInterval(() => setCurrentIndex(prev => (prev + 1) % items.length), 5000);
-    return () => clearInterval(timer);
-  }, [items]);
+    if (items.length <= 1 || isPaused) return;
+    startAutoPlay();
+    return () => stopAutoPlay();
+  }, [items, isPaused]);
+
+  // 드래그 핸들러
+  const handleStart = (clientX: number) => {
+    setIsPaused(true); // 조작 시작 시 자동재생 정지
+    dragStartX.current = clientX;
+  };
+
+  const handleEnd = (clientX: number) => {
+    if (dragStartX.current === null) return;
+    const diff = dragStartX.current - clientX;
+    const threshold = 50; // 50px 이상 밀어야 넘어감
+
+    if (Math.abs(diff) > threshold) {
+      if (diff > 0) { // 왼쪽으로 밀면 다음 카드
+        setCurrentIndex(prev => (prev + 1) % items.length);
+      } else { // 오른쪽으로 밀면 이전 카드
+        setCurrentIndex(prev => (prev - 1 + items.length) % items.length);
+      }
+    }
+
+    dragStartX.current = null;
+    // 손을 떼고 5초 뒤에 다시 자동재생 시작
+    setTimeout(() => setIsPaused(false), 5000);
+  };
 
   const getIndex = (offset: number) => {
     if (items.length === 0) return -1;
@@ -74,7 +115,7 @@ function StackWidgetContent() {
 
     return (
       <div 
-        className="transition-all duration-1000 ease-in-out flex flex-col items-center shrink-0"
+        className="transition-all duration-1000 ease-in-out flex flex-col items-center shrink-0 select-none cursor-grab active:cursor-grabbing"
         style={{ 
           width: cardWidth,
           opacity: opacity,
@@ -98,7 +139,7 @@ function StackWidgetContent() {
           {item.coverImage ? (
             <img 
               src={item.coverImage} 
-              className="w-full h-full object-cover block" 
+              className="w-full h-full object-cover block pointer-events-none" 
               alt={item.title} 
               style={{ borderRadius: '60px' }}
             />
@@ -126,12 +167,17 @@ function StackWidgetContent() {
   };
 
   return (
-    <main className="fixed inset-0 flex items-center justify-center bg-white dark:bg-[#191919] p-0 overflow-hidden !shadow-none">
-      
-      {/* [위치 수정] left-3 → right-3으로 변경하여 오른쪽 아래 끝으로 이동 */}
+    <main 
+      className="fixed inset-0 flex items-center justify-center bg-white dark:bg-[#191919] p-0 overflow-hidden !shadow-none"
+      // 마우스/터치 드래그 이벤트 등록
+      onMouseDown={(e) => handleStart(e.clientX)}
+      onMouseUp={(e) => handleEnd(e.clientX)}
+      onTouchStart={(e) => handleStart(e.touches[0].clientX)}
+      onTouchEnd={(e) => handleEnd(e.changedTouches[0].clientX)}
+    >
       <div className="absolute bottom-3 right-3 z-[100]">
         <button 
-          onClick={fetchData} 
+          onClick={(e) => { e.stopPropagation(); fetchData(); }} 
           className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-black/5 active:scale-90 bg-white/20 dark:bg-white/5 backdrop-blur-sm border border-black/5 dark:border-white/5 transition-all shadow-none"
         >
           <RotateCw size={12} className={`text-gray-300 ${isRefreshing ? 'animate-spin' : ''}`} />
