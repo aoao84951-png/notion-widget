@@ -26,11 +26,17 @@ function StackWidgetContent() {
   const [items, setItems] = useState<BookItem[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  
-  // 드래그 및 자동재생 제어를 위한 Ref
   const [isPaused, setIsPaused] = useState(false);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+
   const dragStartX = useRef<number | null>(null);
   const autoPlayTimer = useRef<NodeJS.Timeout | null>(null);
+  const pauseTimer = useRef<NodeJS.Timeout | null>(null);
+
+  const extendedItems = useMemo(() => {
+    if (!items || items.length === 0) return [];
+    return [...items, ...items, ...items];
+  }, [items]);
 
   const pointColor = useMemo(() => {
     if (!themeColor) return '#6C9AC4';
@@ -42,124 +48,101 @@ function StackWidgetContent() {
     try {
       const response = await fetch('/api/library', { cache: 'no-store' });
       const data = await response.json();
-      setItems(Array.isArray(data?.items) ? data.items : []);
-    } catch (err) { 
-      console.error(err); 
-    } finally { 
-      setTimeout(() => setIsRefreshing(false), 800); 
-    }
-  };
-
-  // 자동 재생 로직 (조작 중일 때는 멈춤)
-  const startAutoPlay = () => {
-    stopAutoPlay();
-    autoPlayTimer.current = setInterval(() => {
-      setCurrentIndex(prev => (prev + 1) % items.length);
-    }, 5000);
-  };
-
-  const stopAutoPlay = () => {
-    if (autoPlayTimer.current) clearInterval(autoPlayTimer.current);
+      const newItems = Array.isArray(data?.items) ? data.items : [];
+      if (newItems.length > 0) {
+        setItems(newItems);
+        setCurrentIndex(newItems.length);
+      }
+    } catch (err) { console.error(err); } 
+    finally { setTimeout(() => setIsRefreshing(false), 800); }
   };
 
   useEffect(() => { fetchData(); }, []);
 
   useEffect(() => {
-    if (items.length <= 1 || isPaused) return;
-    startAutoPlay();
-    return () => stopAutoPlay();
-  }, [items, isPaused]);
+    if (items.length === 0) return;
+    if (currentIndex >= items.length * 2) {
+      const timer = setTimeout(() => {
+        setIsTransitioning(false);
+        setCurrentIndex(items.length);
+      }, 700);
+      return () => clearTimeout(timer);
+    } else if (currentIndex < items.length) {
+      const timer = setTimeout(() => {
+        setIsTransitioning(false);
+        setCurrentIndex(currentIndex + items.length);
+      }, 700);
+      return () => clearTimeout(timer);
+    }
+  }, [currentIndex, items.length]);
 
-  // 드래그 핸들러
+  useEffect(() => {
+    if (items.length <= 1 || isPaused || isRefreshing) return;
+    autoPlayTimer.current = setInterval(() => {
+      setIsTransitioning(true);
+      setCurrentIndex(prev => prev + 1);
+    }, 5000);
+    return () => { if (autoPlayTimer.current) clearInterval(autoPlayTimer.current); };
+  }, [items, isPaused, isRefreshing]);
+
   const handleStart = (clientX: number) => {
-    setIsPaused(true); // 조작 시작 시 자동재생 정지
+    if (items.length === 0) return;
+    setIsPaused(true);
+    if (pauseTimer.current) clearTimeout(pauseTimer.current);
     dragStartX.current = clientX;
   };
 
   const handleEnd = (clientX: number) => {
     if (dragStartX.current === null) return;
     const diff = dragStartX.current - clientX;
-    const threshold = 50; // 50px 이상 밀어야 넘어감
-
-    if (Math.abs(diff) > threshold) {
-      if (diff > 0) { // 왼쪽으로 밀면 다음 카드
-        setCurrentIndex(prev => (prev + 1) % items.length);
-      } else { // 오른쪽으로 밀면 이전 카드
-        setCurrentIndex(prev => (prev - 1 + items.length) % items.length);
-      }
+    if (Math.abs(diff) > 50) {
+      setIsTransitioning(true);
+      if (diff > 0) setCurrentIndex(prev => prev + 1);
+      else setCurrentIndex(prev => prev - 1);
     }
-
     dragStartX.current = null;
-    // 손을 떼고 5초 뒤에 다시 자동재생 시작
-    setTimeout(() => setIsPaused(false), 5000);
+    pauseTimer.current = setTimeout(() => setIsPaused(false), 3000);
   };
 
-  const getIndex = (offset: number) => {
-    if (items.length === 0) return -1;
-    return (currentIndex + offset + items.length) % items.length;
-  };
-
-  const renderBook = (offset: number) => {
-    const idx = getIndex(offset);
-    if (idx === -1) return null;
-    const item = items[idx];
-    const isCenter = offset === 0;
-    
-    const cardWidth = isCenter ? '280px' : '220px'; 
-    const scale = isCenter ? 'scale(1)' : 'scale(0.85)';
-    const opacity = isCenter ? 1 : 0.3;
-    const blur = isCenter ? '0px' : '1.5px';
-    const zIndex = isCenter ? 30 : 10;
-
-    const statusLabel = STATUS_TEXT_MAP[item.status || ''] || (item.status?.toUpperCase() || 'UNKNOWN');
+  const renderBook = (item: BookItem, index: number) => {
+    const isCenter = index === currentIndex;
+    const scale = isCenter ? 'scale(1)' : 'scale(0.8)';
+    const opacity = isCenter ? 1 : 0.5;
+    const blur = isCenter ? '0px' : '2.5px';
+    const displayIndex = (index % (items.length || 1)) + 1;
 
     return (
       <div 
-        className="transition-all duration-1000 ease-in-out flex flex-col items-center shrink-0 select-none cursor-grab active:cursor-grabbing"
-        style={{ 
-          width: cardWidth,
-          opacity: opacity,
-          zIndex: zIndex,
-          transform: scale,
-          filter: `blur(${blur})`,
-          pointerEvents: isCenter ? 'auto' : 'none'
-        }}
+        key={`book-${index}`}
+        className={`flex flex-col items-center shrink-0 select-none ${isTransitioning ? 'transition-all duration-700 ease-out' : ''}`}
+        style={{ width: '300px', opacity, transform: scale, filter: `blur(${blur})`, zIndex: isCenter ? 30 : 10 }}
       >
-        <span 
-          className="text-[12px] font-black mb-4 tracking-[0.2em] transition-opacity duration-700 h-[20px] flex items-center" 
-          style={{ color: pointColor, opacity: isCenter ? 1 : 0 }}
-        >
-          {statusLabel}
+        <span className="text-[12px] font-black mb-4 tracking-[0.2em] h-[20px] flex items-center" style={{ color: pointColor, opacity: isCenter ? 1 : 0 }}>
+          {STATUS_TEXT_MAP[item.status || ''] || 'UNKNOWN'}
         </span>
 
-        <div 
-          className={`relative w-full aspect-[2/3] overflow-hidden bg-gray-200 transition-all duration-1000 ${isCenter ? 'shadow-[0_40px_80px_rgba(0,0,0,0.3)]' : ''}`}
-          style={{ borderRadius: '60px' }} 
-        >
+        <div className={`relative w-[280px] aspect-[2/3] overflow-hidden ${isCenter ? 'shadow-[0_40px_80px_rgba(0,0,0,0.3)]' : ''}`} style={{ borderRadius: '60px' }}>
           {item.coverImage ? (
-            <img 
-              src={item.coverImage} 
-              className="w-full h-full object-cover block pointer-events-none" 
-              alt={item.title} 
-              style={{ borderRadius: '60px' }}
-            />
+            <img src={item.coverImage} className="w-full h-full object-cover block pointer-events-none" alt={item.title} style={{ borderRadius: '60px' }} />
           ) : (
-            <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs font-bold bg-gray-100">NO COVER</div>
+            /* [NO COVER 정교화] - 텍스트 레이아웃이 깨지지 않도록 절대 좌표로 구성 */
+            <div className="w-full h-full bg-[#F2F2F2] dark:bg-[#1A1A1A] relative" style={{ borderRadius: '60px' }}>
+              <div className="absolute inset-0 flex items-center justify-center">
+                <span className="text-[14px] font-black text-gray-400 dark:text-gray-600 tracking-[0.4em] uppercase">NO COVER</span>
+              </div>
+              <div className="absolute inset-0 flex items-center justify-center p-10 opacity-5 select-none pointer-events-none" style={{ transform: 'rotate(-15deg)' }}>
+                 <span className="text-[60px] font-black text-black dark:text-white leading-none text-center break-all">{item.title}</span>
+              </div>
+            </div>
           )}
         </div>
 
-        <div className="text-center w-full px-4 mt-8 transition-all duration-700">
-          <h2 className="text-[18px] font-black text-[#111] dark:text-gray-100 leading-tight mb-2 break-keep tracking-[0.05em] line-clamp-2">
-            {item.title}
-          </h2>
-          <p className="text-[14px] font-black text-[#888] tracking-[0.05em] truncate mb-3">
-            {item.author || '저자 미상'}
-          </p>
-
-          <div className="flex justify-center w-full" style={{ opacity: isCenter ? 1 : 0 }}>
-             <span className="text-[16px] font-black text-[#555] dark:text-gray-400 tracking-[0.2em]">
-                {currentIndex + 1} / {items.length}
-              </span>
+        {/* 양 옆 카드 정보 상시 노출 */}
+        <div className="text-center w-full px-4 mt-8 transition-opacity duration-700">
+          <h2 className="text-[18px] font-black text-[#111] dark:text-gray-100 leading-tight mb-1 break-keep line-clamp-2">{item.title}</h2>
+          <p className="text-[14px] font-black text-[#888] truncate mb-3">{item.author || '저자 미상'}</p>
+          <div className="flex justify-center w-full" style={{ visibility: isCenter ? 'visible' : 'hidden' }}>
+             <span className="text-[16px] font-black text-[#555] dark:text-gray-400 tracking-[0.2em]">{displayIndex} / {items.length}</span>
           </div>
         </div>
       </div>
@@ -167,40 +150,23 @@ function StackWidgetContent() {
   };
 
   return (
-    <main 
-      className="fixed inset-0 flex items-center justify-center bg-white dark:bg-[#191919] p-0 overflow-hidden !shadow-none"
-      // 마우스/터치 드래그 이벤트 등록
-      onMouseDown={(e) => handleStart(e.clientX)}
-      onMouseUp={(e) => handleEnd(e.clientX)}
-      onTouchStart={(e) => handleStart(e.touches[0].clientX)}
-      onTouchEnd={(e) => handleEnd(e.changedTouches[0].clientX)}
-    >
+    <main className="fixed inset-0 flex items-center justify-center bg-white dark:bg-[#191919] p-0 overflow-hidden" 
+      onMouseDown={(e) => handleStart(e.clientX)} onMouseUp={(e) => handleEnd(e.clientX)}
+      onTouchStart={(e) => handleStart(e.touches[0].clientX)} onTouchEnd={(e) => handleEnd(e.changedTouches[0].clientX)}>
       <div className="absolute bottom-3 right-3 z-[100]">
-        <button 
-          onClick={(e) => { e.stopPropagation(); fetchData(); }} 
-          className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-black/5 active:scale-90 bg-white/20 dark:bg-white/5 backdrop-blur-sm border border-black/5 dark:border-white/5 transition-all shadow-none"
-        >
+        <button onClick={(e) => { e.stopPropagation(); fetchData(); }} className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-black/5 active:scale-90 bg-white/20 dark:bg-white/5 backdrop-blur-sm border border-black/5 dark:border-white/5 transition-all shadow-none">
           <RotateCw size={12} className={`text-gray-300 ${isRefreshing ? 'animate-spin' : ''}`} />
         </button>
       </div>
-
-      <div 
-        style={{ transform: 'scale(0.5)', transformOrigin: 'center center' }} 
-        className="relative flex flex-col items-center justify-center min-w-[1400px] h-full"
-      >
-        <div className="flex items-center justify-center gap-12 w-full translate-y-[-20px]">
-          {items.length > 0 ? (
-            <>
-              {renderBook(-2)}
-              {renderBook(-1)}
-              {renderBook(0)}
-              {renderBook(1)}
-              {renderBook(2)}
-            </>
-          ) : (
-            <div className="text-[14px] text-gray-300 font-black tracking-widest animate-pulse">Syncing...</div>
-          )}
-        </div>
+      <div style={{ transform: 'scale(0.5)', transformOrigin: 'center center' }} className="relative flex flex-col items-center justify-center w-full h-full">
+        {items.length > 0 ? (
+          <div className={`flex items-center ${isTransitioning ? 'transition-transform duration-700 ease-out' : ''}`}
+            style={{ transform: `translateX(calc(50% - (300px * ${currentIndex}) - 150px))` }}>
+            {extendedItems.map((item, index) => renderBook(item, index))}
+          </div>
+        ) : (
+          <div className="text-[14px] text-gray-300 font-black tracking-widest animate-pulse uppercase">Syncing...</div>
+        )}
       </div>
     </main>
   );
