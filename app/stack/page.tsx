@@ -125,19 +125,18 @@ function StackWidgetContent() {
           {item.coverImage ? (
             <img src={item.coverImage} className="w-full h-full object-cover block pointer-events-none" alt={item.title} style={{ borderRadius: '60px' }} />
           ) : (
-            /* [NO COVER 정교화] - 텍스트 레이아웃이 깨지지 않도록 절대 좌표로 구성 */
+            /* [NO COVER 정교화] - 깨지는 배경 텍스트 효과 삭제 및 디자인 단순화 */
             <div className="w-full h-full bg-[#F2F2F2] dark:bg-[#1A1A1A] relative" style={{ borderRadius: '60px' }}>
-              <div className="absolute inset-0 flex items-center justify-center">
-                <span className="text-[14px] font-black text-gray-400 dark:text-gray-600 tracking-[0.4em] uppercase">NO COVER</span>
-              </div>
-              <div className="absolute inset-0 flex items-center justify-center p-10 opacity-5 select-none pointer-events-none" style={{ transform: 'rotate(-15deg)' }}>
-                 <span className="text-[60px] font-black text-black dark:text-white leading-none text-center break-all">{item.title}</span>
+              <div className="absolute inset-0 flex flex-col items-center justify-center p-10">
+                {/* 정갈한 NO COVER 문구 */}
+                <span className="text-[14px] font-black text-gray-400 dark:text-gray-600 tracking-[0.4em] uppercase mb-6">NO COVER</span>
+                {/* 실제 제목 텍스트 */}
+                <span className="text-[20px] font-black text-gray-700 dark:text-gray-300 leading-tight text-center break-keep line-clamp-4">{item.title}</span>
               </div>
             </div>
           )}
         </div>
 
-        {/* 양 옆 카드 정보 상시 노출 */}
         <div className="text-center w-full px-4 mt-8 transition-opacity duration-700">
           <h2 className="text-[18px] font-black text-[#111] dark:text-gray-100 leading-tight mb-1 break-keep line-clamp-2">{item.title}</h2>
           <p className="text-[14px] font-black text-[#888] truncate mb-3">{item.author || '저자 미상'}</p>
