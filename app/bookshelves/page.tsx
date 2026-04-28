@@ -726,7 +726,10 @@ export default function BookShelvesPage() {
             --tab-bg: #24252a;
             --shadow: rgba(0, 0, 0, 0.35);
             --track: #4b5563;
+            
+            box-shadow: none;
           }
+
         }
 
         .topBar {
