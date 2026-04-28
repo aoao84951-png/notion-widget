@@ -69,6 +69,7 @@ function toCategoryKey(value: string | null | undefined) {
 
   if (compact === 'BL' || compact === '비엘') return 'BL';
   if (compact === 'ROMANCE' || compact === '로맨스') return 'ROMANCE';
+
   if (
     compact === 'RO-FAN' ||
     compact === 'ROFAN' ||
@@ -77,6 +78,7 @@ function toCategoryKey(value: string | null | undefined) {
   ) {
     return 'RO-FAN';
   }
+
   if (
     compact === 'LITERATURE' ||
     compact === '일반' ||
@@ -137,6 +139,28 @@ function StarRating({ rating }: { rating: number | null | undefined }) {
       ))}
     </div>
   );
+}
+
+function formatProgress(book: BookItem | null) {
+  if (!book) return '-';
+
+  if (typeof book.progress === 'number' && !Number.isNaN(book.progress)) {
+    const percent = book.progress <= 1 ? book.progress * 100 : book.progress;
+    return `${Math.round(percent)}%`;
+  }
+
+  if (book.progressText) {
+    const matched = book.progressText.match(/-?\d+(\.\d+)?/);
+    if (!matched) return book.progressText;
+
+    const parsed = Number(matched[0]);
+    if (Number.isNaN(parsed)) return book.progressText;
+
+    const percent = parsed <= 1 ? parsed * 100 : parsed;
+    return `${Math.round(percent)}%`;
+  }
+
+  return '-';
 }
 
 export default function BookShelvesPage() {
@@ -550,20 +574,14 @@ export default function BookShelvesPage() {
                 </div>
                 <div>
                   <span>진행률</span>
-                  <strong>
-                    {typeof selectedBook.progress === 'number'
-                      ? `${selectedBook.progress}%`
-                      : selectedBook.progressText ?? '-'}
-                  </strong>
+                  <strong>{formatProgress(selectedBook)}</strong>
                 </div>
                 <div>
                   <span>평점</span>
-                  <strong>{selectedBook.ratingText ?? '-'}</strong>
+                  <strong className="detailStarValue">
+                    <StarRating rating={selectedBook.rating} />
+                  </strong>
                 </div>
-              </div>
-
-              <div className="detailRating">
-                <StarRating rating={selectedBook.rating} />
               </div>
 
               {selectedBook.url && (
@@ -1310,8 +1328,9 @@ export default function BookShelvesPage() {
           text-overflow: ellipsis;
         }
 
-        .detailRating {
-          margin-top: 9px;
+        .detailStarValue {
+          display: flex;
+          justify-content: flex-end;
         }
 
         .openNotion {

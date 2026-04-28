@@ -28,8 +28,7 @@ import {
       number?: number | null;
       string?: string | null;
     };
-    date?: { start?: string | null } | null;
-    created_time?: string;
+    number?: number | null;
   };
   
   type QueryPageResult = {
@@ -44,7 +43,6 @@ import {
     id: string;
     title: string | null;
     key: string | null;
-    error?: string | null;
   };
   
   function readText(nodes?: TextNode[]) {
@@ -101,18 +99,40 @@ import {
       return names?.join(', ') || null;
     }
   
+    if (property.type === 'number' && typeof property.number === 'number') {
+      return String(property.number);
+    }
+  
     if (property.type === 'formula') {
       const formula = property.formula;
-      if (formula?.type === 'string') return formula.string ?? null;
+  
       if (formula?.type === 'number' && typeof formula.number === 'number') {
         return String(formula.number);
       }
+  
+      if (formula?.type === 'string') {
+        return formula.string ?? null;
+      }
     }
   
-    if (property.type === 'date') return property.date?.start ?? null;
-    if (property.type === 'created_time') return property.created_time ?? null;
-  
     return null;
+  }
+  
+  function parseProgressValue(progressText: string | null) {
+    if (!progressText) return null;
+  
+    const matched = progressText.match(/-?\d+(\.\d+)?/);
+    if (!matched) return null;
+  
+    const parsed = Number(matched[0]);
+    if (Number.isNaN(parsed)) return null;
+  
+    const percent = parsed <= 1 ? parsed * 100 : parsed;
+  
+    if (percent < 0) return 0;
+    if (percent > 100) return 100;
+  
+    return Math.round(percent);
   }
   
   function toCategoryKey(value: string | null | undefined) {
@@ -160,8 +180,10 @@ import {
   
   function readTitleFromProperties(properties: Record<string, NotionProperty>) {
     const titleProp = findProperty(properties, ['제목', 'title', '이름', 'Name']);
+  
     if (titleProp?.type === 'title') return readText(titleProp.title) || null;
     if (titleProp?.type === 'rich_text') return readText(titleProp.rich_text) || null;
+  
     return null;
   }
   
@@ -177,6 +199,7 @@ import {
     }
   
     const first = coverProp.files[0];
+  
     if (first?.type === 'file') return first.file?.url ?? null;
     if (first?.type === 'external') return first.external?.url ?? null;
   
@@ -211,16 +234,11 @@ import {
     if (!ratingText) return null;
   
     const yellowHeartCount = (ratingText.match(/💛/g) ?? []).length;
-    const whiteHeartCount = (ratingText.match(/🤍/g) ?? []).length;
-    const grayHeartCount = (ratingText.match(/🩶|♡/g) ?? []).length;
     const filledStarCount = (ratingText.match(/[★⭐]/g) ?? []).length;
     const numericMatch = ratingText.match(/\d+(\.\d+)?/);
     const numeric = numericMatch ? Number(numericMatch[0]) : NaN;
   
-    if (yellowHeartCount > 0 || whiteHeartCount > 0 || grayHeartCount > 0) {
-      return Math.min(5, yellowHeartCount);
-    }
-  
+    if (yellowHeartCount > 0) return Math.min(5, yellowHeartCount);
     if (filledStarCount > 0) return Math.min(5, filledStarCount);
     if (!Number.isNaN(numeric) && numeric >= 0) return Math.min(5, numeric);
   
@@ -265,14 +283,9 @@ import {
         const title = extractCategoryTitleFromRelationPage(page);
         const key = toCategoryKey(title);
   
-        results.push({ id, title, key, error: null });
-      } catch (error) {
-        results.push({
-          id,
-          title: null,
-          key: null,
-          error: error instanceof Error ? error.message : 'relation page retrieve failed',
-        });
+        results.push({ id, title, key });
+      } catch {
+        results.push({ id, title: null, key: null });
       }
     }
   
@@ -294,7 +307,12 @@ import {
       const response = await notion.dataSources.query({
         data_source_id: dataSourceId,
         page_size: 100,
-        sorts: [{ timestamp: 'created_time', direction: 'descending' }],
+        sorts: [
+          {
+            timestamp: 'created_time',
+            direction: 'descending',
+          },
+        ],
         ...(cursor ? { start_cursor: cursor } : {}),
       });
   
@@ -368,7 +386,7 @@ import {
             .filter(Boolean) as string[];
   
           const ratingText = getRatingText(properties);
-          const progress = getProgressText(properties);
+          const progressText = getProgressText(properties);
   
           return {
             id: page.id ?? null,
@@ -379,8 +397,10 @@ import {
             cover: getCoverUrl(properties),
             author: getAuthor(properties),
             status: getStatusName(properties),
+  
             platform: getPlatformText(properties),
-            progress,
+            progressText,
+            progress: parseProgressValue(progressText),
   
             category: relationCategories,
             categoryRelationIds: relationIds,
