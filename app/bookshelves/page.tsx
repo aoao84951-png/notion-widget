@@ -633,8 +633,15 @@ export default function BookShelvesPage() {
         :global(body) {
           margin: 0;
           padding: 0;
-          background: transparent !important;
+          background: #ffffff;
           overflow: hidden;
+        }
+
+        @media (prefers-color-scheme: dark) {
+          :global(html),
+          :global(body) {
+            background: #191919;
+          }
         }
 
         :global(#__next),
@@ -649,7 +656,7 @@ export default function BookShelvesPage() {
         .page {
           width: 100%;
           min-height: 100vh;
-          background: transparent !important;
+          background: #ffffff;
           display: flex;
           align-items: center;
           justify-content: center;
@@ -663,6 +670,12 @@ export default function BookShelvesPage() {
             'Apple SD Gothic Neo',
             sans-serif;
           color: var(--text-main);
+        }
+
+        @media (prefers-color-scheme: dark) {
+          .page {
+              background: #191919;
+          }
         }
 
         .scaleBox {
