@@ -703,9 +703,7 @@ export default function BookShelvesPage() {
           background: var(--widget-bg);
           border: 1px solid var(--border);
           border-radius: 18px;
-          box-shadow:
-            0 14px 38px var(--shadow),
-            0 2px 6px rgba(17, 24, 39, 0.04);
+          box-shadow: none;
           padding: 12px;
           display: flex;
           flex-direction: column;
@@ -726,7 +724,7 @@ export default function BookShelvesPage() {
             --tab-bg: #24252a;
             --shadow: rgba(0, 0, 0, 0.35);
             --track: #4b5563;
-            
+
             box-shadow: none;
           }
 
@@ -907,7 +905,7 @@ export default function BookShelvesPage() {
           border: 1px solid var(--border);
           border-radius: 13px;
           overflow: hidden;
-          box-shadow: 0 5px 14px var(--shadow);
+          box-shadow: none;
         }
 
         .tableHeader,
