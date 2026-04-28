@@ -633,7 +633,13 @@ export default function BookShelvesPage() {
         :global(body) {
           margin: 0;
           padding: 0;
-          background: transparent;
+          background: transparent !important;
+          overflow: hidden;
+        }
+
+        :global(#__next),
+        :global(main) {
+          background: transparent !important;
         }
 
         * {
@@ -643,7 +649,7 @@ export default function BookShelvesPage() {
         .page {
           width: 100%;
           min-height: 100vh;
-          background: transparent;
+          background: transparent !important;
           display: flex;
           align-items: center;
           justify-content: center;
