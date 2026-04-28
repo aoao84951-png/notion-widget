@@ -28,12 +28,15 @@ import {
       number?: number | null;
       string?: string | null;
     };
+    date?: { start?: string | null } | null;
+    created_time?: string;
   };
   
   type QueryPageResult = {
     object?: string;
     id?: string;
     url?: string;
+    created_time?: string;
     properties?: Record<string, NotionProperty>;
   };
   
@@ -51,7 +54,6 @@ import {
   
   function sanitizeEnvDatabaseId(raw: string | undefined): string | null {
     if (!raw) return null;
-  
     const trimmed = raw.trim().replace(/^["']|["']$/g, '').trim();
     const fromUrlOrUuid = extractDatabaseId(trimmed);
     if (fromUrlOrUuid) return fromUrlOrUuid;
@@ -64,7 +66,6 @@ import {
   
   function sanitizeIntegrationToken(raw: string | undefined): string | null {
     if (!raw) return null;
-  
     const token = raw.trim().replace(/^["']|["']$/g, '').trim();
     return token || null;
   }
@@ -73,10 +74,7 @@ import {
     return name.replace(/\s/g, '').toLowerCase();
   }
   
-  function findProperty(
-    properties: Record<string, NotionProperty>,
-    candidates: string[]
-  ) {
+  function findProperty(properties: Record<string, NotionProperty>, candidates: string[]) {
     for (const key of candidates) {
       if (properties[key]) return properties[key];
     }
@@ -105,12 +103,14 @@ import {
   
     if (property.type === 'formula') {
       const formula = property.formula;
-  
       if (formula?.type === 'string') return formula.string ?? null;
       if (formula?.type === 'number' && typeof formula.number === 'number') {
         return String(formula.number);
       }
     }
+  
+    if (property.type === 'date') return property.date?.start ?? null;
+    if (property.type === 'created_time') return property.created_time ?? null;
   
     return null;
   }
@@ -155,16 +155,13 @@ import {
     if (key === 'ROMANCE') return '로맨스';
     if (key === 'RO-FAN') return '로맨스판타지';
     if (key === 'LITERATURE') return '일반서적';
-  
     return null;
   }
   
   function readTitleFromProperties(properties: Record<string, NotionProperty>) {
     const titleProp = findProperty(properties, ['제목', 'title', '이름', 'Name']);
-  
     if (titleProp?.type === 'title') return readText(titleProp.title) || null;
     if (titleProp?.type === 'rich_text') return readText(titleProp.rich_text) || null;
-  
     return null;
   }
   
@@ -180,7 +177,6 @@ import {
     }
   
     const first = coverProp.files[0];
-  
     if (first?.type === 'file') return first.file?.url ?? null;
     if (first?.type === 'external') return first.external?.url ?? null;
   
@@ -189,23 +185,26 @@ import {
   
   function getAuthor(properties: Record<string, NotionProperty>) {
     const authorProp = findProperty(properties, ['author', '저자']);
-  
     if (authorProp?.type !== 'rich_text') return null;
-  
     return readText(authorProp.rich_text) || null;
   }
   
   function getStatusName(properties: Record<string, NotionProperty>) {
     const statusProp = findProperty(properties, ['상태', 'status']);
-  
     if (statusProp?.type !== 'status') return null;
-  
     return statusProp.status?.name ?? null;
   }
   
   function getRatingText(properties: Record<string, NotionProperty>) {
-    const ratingProp = findProperty(properties, ['평점', 'rating', '별점']);
-    return propertyToText(ratingProp);
+    return propertyToText(findProperty(properties, ['평점', 'rating', '별점']));
+  }
+  
+  function getPlatformText(properties: Record<string, NotionProperty>) {
+    return propertyToText(findProperty(properties, ['플랫폼', 'platform']));
+  }
+  
+  function getProgressText(properties: Record<string, NotionProperty>) {
+    return propertyToText(findProperty(properties, ['진행상태', '진행률', 'progress']));
   }
   
   function parseRatingValue(ratingText: string | null) {
@@ -266,12 +265,7 @@ import {
         const title = extractCategoryTitleFromRelationPage(page);
         const key = toCategoryKey(title);
   
-        results.push({
-          id,
-          title,
-          key,
-          error: null,
-        });
+        results.push({ id, title, key, error: null });
       } catch (error) {
         results.push({
           id,
@@ -300,6 +294,7 @@ import {
       const response = await notion.dataSources.query({
         data_source_id: dataSourceId,
         page_size: 100,
+        sorts: [{ timestamp: 'created_time', direction: 'descending' }],
         ...(cursor ? { start_cursor: cursor } : {}),
       });
   
@@ -310,7 +305,6 @@ import {
       }
   
       if (!response.has_more || !response.next_cursor) break;
-  
       cursor = response.next_cursor;
     }
   
@@ -374,21 +368,23 @@ import {
             .filter(Boolean) as string[];
   
           const ratingText = getRatingText(properties);
+          const progress = getProgressText(properties);
   
           return {
             id: page.id ?? null,
             url: page.url ?? null,
+            createdTime: page.created_time ?? null,
   
             title: readTitleFromProperties(properties),
             cover: getCoverUrl(properties),
             author: getAuthor(properties),
             status: getStatusName(properties),
+            platform: getPlatformText(properties),
+            progress,
   
             category: relationCategories,
             categoryRelationIds: relationIds,
-            categoryRawTexts: relationCategories
-              .map((item) => item.title)
-              .filter(Boolean),
+            categoryRawTexts: relationCategories.map((item) => item.title).filter(Boolean),
             categoryKeys,
             categoryLabels,
             primaryCategoryKey: categoryKeys[0] ?? null,

@@ -10,10 +10,14 @@ type CategoryItem = {
 type BookItem = {
   id?: string;
   url?: string | null;
+  createdTime?: string | null;
   title: string | null;
   cover: string | null;
   author: string | null;
   status: string | null;
+  platform?: string | null;
+  progressText?: string | null;
+  progress?: number | null;
   category: CategoryItem[];
   categoryRelationIds?: string[];
   categoryRawTexts?: string[];
@@ -65,10 +69,20 @@ function toCategoryKey(value: string | null | undefined) {
 
   if (compact === 'BL' || compact === '비엘') return 'BL';
   if (compact === 'ROMANCE' || compact === '로맨스') return 'ROMANCE';
-  if (compact === 'RO-FAN' || compact === 'ROFAN' || compact === '로판' || compact === '로맨스판타지') {
+  if (
+    compact === 'RO-FAN' ||
+    compact === 'ROFAN' ||
+    compact === '로판' ||
+    compact === '로맨스판타지'
+  ) {
     return 'RO-FAN';
   }
-  if (compact === 'LITERATURE' || compact === '일반' || compact === '일반서적' || compact === '문학') {
+  if (
+    compact === 'LITERATURE' ||
+    compact === '일반' ||
+    compact === '일반서적' ||
+    compact === '문학'
+  ) {
     return 'LITERATURE';
   }
 
@@ -131,6 +145,7 @@ export default function BookShelvesPage() {
 
   const [books, setBooks] = useState<BookItem[]>([]);
   const [selectedBook, setSelectedBook] = useState<BookItem | null>(null);
+  const [showAddConfirm, setShowAddConfirm] = useState(false);
   const [activeCategory, setActiveCategory] = useState<string>('ALL');
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
@@ -175,10 +190,7 @@ export default function BookShelvesPage() {
     }
   }
 
-  async function handleAddBook() {
-    const confirmed = window.confirm('새 책 페이지를 추가할까요?');
-    if (!confirmed) return;
-
+  async function createBookAndOpen() {
     try {
       setCreating(true);
       setError('');
@@ -193,6 +205,7 @@ export default function BookShelvesPage() {
         throw new Error(data?.error ?? '새 책을 추가하지 못했습니다.');
       }
 
+      setShowAddConfirm(false);
       await loadBooks();
 
       if (data?.url) {
@@ -230,7 +243,15 @@ export default function BookShelvesPage() {
           ...(book.category ?? []).map((item) => item.title ?? ''),
         ].join(' ');
 
-        return [book.title, book.author, book.status, categoryTexts, book.ratingText]
+        return [
+          book.title,
+          book.author,
+          book.status,
+          book.platform,
+          book.progressText,
+          categoryTexts,
+          book.ratingText,
+        ]
           .filter(Boolean)
           .join(' ')
           .toLowerCase()
@@ -262,7 +283,7 @@ export default function BookShelvesPage() {
         }}
       >
         <section
-          className={`widget ${selectedBook ? 'detailOpen' : ''}`}
+          className="widget"
           style={{
             transform: `scale(${scale})`,
           }}
@@ -289,7 +310,7 @@ export default function BookShelvesPage() {
             <button
               type="button"
               className="addButton"
-              onClick={handleAddBook}
+              onClick={() => setShowAddConfirm(true)}
               disabled={creating}
               aria-label="새 책 추가"
               title="새 책 추가"
@@ -522,6 +543,25 @@ export default function BookShelvesPage() {
                 )}
               </div>
 
+              <div className="detailInfoList">
+                <div>
+                  <span>플랫폼</span>
+                  <strong>{selectedBook.platform ?? '-'}</strong>
+                </div>
+                <div>
+                  <span>진행률</span>
+                  <strong>
+                    {typeof selectedBook.progress === 'number'
+                      ? `${selectedBook.progress}%`
+                      : selectedBook.progressText ?? '-'}
+                  </strong>
+                </div>
+                <div>
+                  <span>평점</span>
+                  <strong>{selectedBook.ratingText ?? '-'}</strong>
+                </div>
+              </div>
+
               <div className="detailRating">
                 <StarRating rating={selectedBook.rating} />
               </div>
@@ -530,12 +570,42 @@ export default function BookShelvesPage() {
                 <button
                   type="button"
                   className="openNotion"
-                  onClick={() => window.open(selectedBook.url ?? '', '_blank', 'noopener,noreferrer')}
+                  onClick={() =>
+                    window.open(selectedBook.url ?? '', '_blank', 'noopener,noreferrer')
+                  }
                 >
                   Notion에서 열기
                 </button>
               )}
             </aside>
+          )}
+
+          {showAddConfirm && (
+            <div className="confirmOverlay">
+              <div className="confirmBox">
+                <p>새 책을 추가할까요?</p>
+                <span>도서관 DB에 새 페이지가 생성됩니다.</span>
+
+                <div className="confirmButtons">
+                  <button
+                    type="button"
+                    className="cancelAdd"
+                    onClick={() => setShowAddConfirm(false)}
+                    disabled={creating}
+                  >
+                    취소
+                  </button>
+                  <button
+                    type="button"
+                    className="confirmAdd"
+                    onClick={createBookAndOpen}
+                    disabled={creating}
+                  >
+                    {creating ? '추가 중...' : '추가하기'}
+                  </button>
+                </div>
+              </div>
+            </div>
           )}
         </section>
       </div>
@@ -1138,13 +1208,13 @@ export default function BookShelvesPage() {
         }
 
         .detailCover {
-          width: 54px;
-          height: 76px;
+          width: 48px;
+          height: 68px;
           border-radius: 9px;
           overflow: hidden;
           background: var(--track);
           box-shadow: 0 6px 16px var(--shadow);
-          margin-top: 12px;
+          margin-top: 8px;
         }
 
         .detailCover img {
@@ -1168,11 +1238,11 @@ export default function BookShelvesPage() {
 
         .detailPanel h2 {
           width: 100%;
-          margin: 12px 0 4px;
+          margin: 10px 0 4px;
           color: var(--text-main);
-          font-size: 12px;
+          font-size: 11.5px;
           font-weight: 800;
-          line-height: 1.35;
+          line-height: 1.32;
           text-align: center;
           word-break: keep-all;
         }
@@ -1180,7 +1250,7 @@ export default function BookShelvesPage() {
         .detailAuthor {
           margin: 0;
           color: var(--text-sub);
-          font-size: 9px;
+          font-size: 8.5px;
           font-weight: 650;
           text-align: center;
         }
@@ -1190,12 +1260,12 @@ export default function BookShelvesPage() {
           flex-wrap: wrap;
           justify-content: center;
           gap: 5px;
-          margin-top: 12px;
+          margin-top: 9px;
         }
 
         .detailStatus,
         .detailGenre {
-          height: 18px;
+          height: 17px;
           padding: 0 8px;
           border-radius: 999px;
           display: inline-flex;
@@ -1205,14 +1275,49 @@ export default function BookShelvesPage() {
           font-weight: 750;
         }
 
+        .detailInfoList {
+          width: 100%;
+          margin-top: 10px;
+          display: grid;
+          gap: 5px;
+        }
+
+        .detailInfoList div {
+          min-height: 22px;
+          border-radius: 9px;
+          background: var(--tab-bg);
+          padding: 4px 7px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 6px;
+        }
+
+        .detailInfoList span {
+          color: var(--text-sub);
+          font-size: 7.5px;
+          font-weight: 700;
+          flex-shrink: 0;
+        }
+
+        .detailInfoList strong {
+          color: var(--text-main);
+          font-size: 8px;
+          font-weight: 800;
+          text-align: right;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
         .detailRating {
-          margin-top: 12px;
+          margin-top: 9px;
         }
 
         .openNotion {
           margin-top: auto;
           width: 100%;
-          height: 28px;
+          height: 27px;
           border: 1px solid var(--border);
           border-radius: 10px;
           background: var(--card-bg);
@@ -1221,6 +1326,74 @@ export default function BookShelvesPage() {
           font-weight: 750;
           cursor: pointer;
           box-shadow: 0 5px 12px var(--shadow);
+        }
+
+        .confirmOverlay {
+          position: absolute;
+          inset: 0;
+          z-index: 50;
+          background: rgba(17, 24, 39, 0.16);
+          backdrop-filter: blur(8px);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .confirmBox {
+          width: 210px;
+          border-radius: 17px;
+          border: 1px solid var(--border);
+          background: var(--card-bg);
+          box-shadow: 0 16px 40px rgba(17, 24, 39, 0.18);
+          padding: 16px;
+          text-align: center;
+        }
+
+        .confirmBox p {
+          margin: 0;
+          color: var(--text-main);
+          font-size: 13px;
+          font-weight: 850;
+        }
+
+        .confirmBox span {
+          display: block;
+          margin-top: 6px;
+          color: var(--text-sub);
+          font-size: 9px;
+          font-weight: 650;
+        }
+
+        .confirmButtons {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 7px;
+          margin-top: 14px;
+        }
+
+        .confirmButtons button {
+          height: 28px;
+          border-radius: 10px;
+          cursor: pointer;
+          font-size: 9px;
+          font-weight: 800;
+        }
+
+        .cancelAdd {
+          border: 1px solid var(--border);
+          background: var(--tab-bg);
+          color: var(--text-sub);
+        }
+
+        .confirmAdd {
+          border: 1px solid #bfdbfe;
+          background: #e8f0ff;
+          color: #1d4ed8;
+        }
+
+        .confirmButtons button:disabled {
+          opacity: 0.55;
+          cursor: default;
         }
       `}</style>
     </main>
