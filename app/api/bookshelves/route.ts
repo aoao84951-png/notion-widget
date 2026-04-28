@@ -32,68 +32,135 @@ import {
   
   type QueryPageResult = {
     object?: string;
+    id?: string;
+    url?: string;
     properties?: Record<string, NotionProperty>;
   };
   
   type RelationItem = {
     id: string;
     title: string | null;
+    key: string | null;
+    error?: string | null;
   };
-  
-  const CATEGORY_MAP: Record<string, string> = {
-    BL: 'BL',
-    비엘: 'BL',
-  
-    ROMANCE: '로맨스',
-    로맨스: '로맨스',
-  
-    'RO-FAN': '로맨스판타지',
-    ROFAN: '로맨스판타지',
-    로판: '로맨스판타지',
-    로맨스판타지: '로맨스판타지',
-  
-    LITERATURE: '일반서적',
-    일반: '일반서적',
-    일반서적: '일반서적',
-  };
-  
-  function normalizeCategoryName(name: string | null | undefined) {
-    if (!name) return null;
-  
-    const raw = name.trim();
-    const compact = raw.replace(/\s+/g, '').replace(/_/g, '-').toUpperCase();
-  
-    return CATEGORY_MAP[compact] ?? CATEGORY_MAP[raw] ?? raw;
-  }
-  
-  function sanitizeEnvDatabaseId(raw: string | undefined): string | null {
-    if (!raw) return null;
-    const trimmed = raw.trim().replace(/^["']|["']$/g, '').trim();
-    const fromUrlOrUuid = extractDatabaseId(trimmed);
-    if (fromUrlOrUuid) return fromUrlOrUuid;
-    const compact = trimmed.replace(/-/g, '').replace(/\s/g, '');
-    if (/^[a-f0-9]{32}$/i.test(compact)) return extractDatabaseId(compact);
-    return null;
-  }
-  
-  function sanitizeIntegrationToken(raw: string | undefined): string | null {
-    if (!raw) return null;
-    const token = raw.trim().replace(/^["']|["']$/g, '').trim();
-    return token || null;
-  }
-  
-  function logOutgoingQueryUrl(dataSourceId: string) {
-    const peek = `${dataSourceId.slice(0, 4)}…${dataSourceId.slice(-4)}`;
-    console.log(`[api/bookshelves] POST ${NOTION_API_V1}/data_sources/${peek}/query`);
-  }
   
   function readText(nodes?: TextNode[]) {
     if (!Array.isArray(nodes)) return '';
     return nodes.map((node) => node?.plain_text ?? '').join('').trim();
   }
   
+  function sanitizeEnvDatabaseId(raw: string | undefined): string | null {
+    if (!raw) return null;
+  
+    const trimmed = raw.trim().replace(/^["']|["']$/g, '').trim();
+    const fromUrlOrUuid = extractDatabaseId(trimmed);
+    if (fromUrlOrUuid) return fromUrlOrUuid;
+  
+    const compact = trimmed.replace(/-/g, '').replace(/\s/g, '');
+    if (/^[a-f0-9]{32}$/i.test(compact)) return extractDatabaseId(compact);
+  
+    return null;
+  }
+  
+  function sanitizeIntegrationToken(raw: string | undefined): string | null {
+    if (!raw) return null;
+  
+    const token = raw.trim().replace(/^["']|["']$/g, '').trim();
+    return token || null;
+  }
+  
+  function normalizePropertyName(name: string) {
+    return name.replace(/\s/g, '').toLowerCase();
+  }
+  
+  function findProperty(
+    properties: Record<string, NotionProperty>,
+    candidates: string[]
+  ) {
+    for (const key of candidates) {
+      if (properties[key]) return properties[key];
+    }
+  
+    const foundKey = Object.keys(properties).find((key) =>
+      candidates.some((candidate) =>
+        normalizePropertyName(key).includes(normalizePropertyName(candidate))
+      )
+    );
+  
+    return foundKey ? properties[foundKey] : undefined;
+  }
+  
+  function propertyToText(property: NotionProperty | undefined) {
+    if (!property) return null;
+  
+    if (property.type === 'title') return readText(property.title) || null;
+    if (property.type === 'rich_text') return readText(property.rich_text) || null;
+    if (property.type === 'status') return property.status?.name ?? null;
+    if (property.type === 'select') return property.select?.name ?? null;
+  
+    if (property.type === 'multi_select') {
+      const names = property.multi_select?.map((item) => item.name).filter(Boolean);
+      return names?.join(', ') || null;
+    }
+  
+    if (property.type === 'formula') {
+      const formula = property.formula;
+  
+      if (formula?.type === 'string') return formula.string ?? null;
+      if (formula?.type === 'number' && typeof formula.number === 'number') {
+        return String(formula.number);
+      }
+    }
+  
+    return null;
+  }
+  
+  function toCategoryKey(value: string | null | undefined) {
+    if (!value) return null;
+  
+    const compact = value
+      .normalize('NFKC')
+      .trim()
+      .replace(/\s+/g, '')
+      .replace(/_/g, '-')
+      .replace(/[()]/g, '')
+      .toUpperCase();
+  
+    if (compact === 'BL' || compact === '비엘') return 'BL';
+    if (compact === 'ROMANCE' || compact === '로맨스') return 'ROMANCE';
+  
+    if (
+      compact === 'RO-FAN' ||
+      compact === 'ROFAN' ||
+      compact === '로판' ||
+      compact === '로맨스판타지'
+    ) {
+      return 'RO-FAN';
+    }
+  
+    if (
+      compact === 'LITERATURE' ||
+      compact === '일반' ||
+      compact === '일반서적' ||
+      compact === '문학'
+    ) {
+      return 'LITERATURE';
+    }
+  
+    return null;
+  }
+  
+  function toCategoryLabel(key: string | null | undefined) {
+    if (key === 'BL') return 'BL';
+    if (key === 'ROMANCE') return '로맨스';
+    if (key === 'RO-FAN') return '로맨스판타지';
+    if (key === 'LITERATURE') return '일반서적';
+  
+    return null;
+  }
+  
   function readTitleFromProperties(properties: Record<string, NotionProperty>) {
-    const titleProp = properties['제목'];
+    const titleProp = findProperty(properties, ['제목', 'title', '이름', 'Name']);
   
     if (titleProp?.type === 'title') return readText(titleProp.title) || null;
     if (titleProp?.type === 'rich_text') return readText(titleProp.rich_text) || null;
@@ -102,7 +169,7 @@ import {
   }
   
   function getCoverUrl(properties: Record<string, NotionProperty>) {
-    const coverProp = properties['cover'];
+    const coverProp = findProperty(properties, ['cover', '표지', '커버']);
   
     if (
       coverProp?.type !== 'files' ||
@@ -121,50 +188,48 @@ import {
   }
   
   function getAuthor(properties: Record<string, NotionProperty>) {
-    const authorProp = properties['author'];
+    const authorProp = findProperty(properties, ['author', '저자']);
+  
     if (authorProp?.type !== 'rich_text') return null;
   
-    const author = readText(authorProp.rich_text);
-    return author || null;
+    return readText(authorProp.rich_text) || null;
   }
   
   function getStatusName(properties: Record<string, NotionProperty>) {
-    const statusProp = properties['상태'];
+    const statusProp = findProperty(properties, ['상태', 'status']);
+  
     if (statusProp?.type !== 'status') return null;
   
     return statusProp.status?.name ?? null;
   }
   
-  function clampProgress(value: number) {
-    if (Number.isNaN(value)) return null;
-    if (value < 0) return 0;
-    if (value > 100) return 100;
-    return Math.round(value);
+  function getRatingText(properties: Record<string, NotionProperty>) {
+    const ratingProp = findProperty(properties, ['평점', 'rating', '별점']);
+    return propertyToText(ratingProp);
   }
   
-  function parseProgressFormula(properties: Record<string, NotionProperty>) {
-    const progressProp = properties['진행상태'];
+  function parseRatingValue(ratingText: string | null) {
+    if (!ratingText) return null;
   
-    if (progressProp?.type !== 'formula' || !progressProp.formula) return null;
+    const yellowHeartCount = (ratingText.match(/💛/g) ?? []).length;
+    const whiteHeartCount = (ratingText.match(/🤍/g) ?? []).length;
+    const grayHeartCount = (ratingText.match(/🩶|♡/g) ?? []).length;
+    const filledStarCount = (ratingText.match(/[★⭐]/g) ?? []).length;
+    const numericMatch = ratingText.match(/\d+(\.\d+)?/);
+    const numeric = numericMatch ? Number(numericMatch[0]) : NaN;
   
-    const formula = progressProp.formula;
-  
-    if (formula.type === 'number' && typeof formula.number === 'number') {
-      return clampProgress(formula.number);
+    if (yellowHeartCount > 0 || whiteHeartCount > 0 || grayHeartCount > 0) {
+      return Math.min(5, yellowHeartCount);
     }
   
-    if (formula.type === 'string' && typeof formula.string === 'string') {
-      const matched = formula.string.trim().match(/-?\d+(\.\d+)?/);
-      if (!matched) return null;
-  
-      return clampProgress(Number(matched[0]));
-    }
+    if (filledStarCount > 0) return Math.min(5, filledStarCount);
+    if (!Number.isNaN(numeric) && numeric >= 0) return Math.min(5, numeric);
   
     return null;
   }
   
-  function getCategoryIds(properties: Record<string, NotionProperty>) {
-    const categoryProp = properties['카테고리'];
+  function getCategoryRelationIds(properties: Record<string, NotionProperty>) {
+    const categoryProp = findProperty(properties, ['카테고리']);
   
     if (categoryProp?.type !== 'relation' || !Array.isArray(categoryProp.relation)) {
       return [];
@@ -173,37 +238,7 @@ import {
     return categoryProp.relation.map((item) => item.id).filter(Boolean);
   }
   
-  function getDirectCategoryNames(properties: Record<string, NotionProperty>) {
-    const categoryProp = properties['카테고리'];
-  
-    if (categoryProp?.type === 'select') {
-      return categoryProp.select?.name ? [categoryProp.select.name] : [];
-    }
-  
-    if (categoryProp?.type === 'multi_select') {
-      return (categoryProp.multi_select ?? [])
-        .map((item) => item.name)
-        .filter(Boolean) as string[];
-    }
-  
-    if (categoryProp?.type === 'status') {
-      return categoryProp.status?.name ? [categoryProp.status.name] : [];
-    }
-  
-    if (categoryProp?.type === 'rich_text') {
-      const text = readText(categoryProp.rich_text);
-      return text ? [text] : [];
-    }
-  
-    if (categoryProp?.type === 'title') {
-      const text = readText(categoryProp.title);
-      return text ? [text] : [];
-    }
-  
-    return [];
-  }
-  
-  function extractPageTitleFromRetrievedPage(page: unknown): string | null {
+  function extractCategoryTitleFromRelationPage(page: unknown) {
     const p = page as { properties?: Record<string, NotionProperty> };
     const props = p.properties ?? {};
   
@@ -223,20 +258,36 @@ import {
     notion: Client,
     relationIds: string[]
   ): Promise<RelationItem[]> {
-    return Promise.all(
-      relationIds.map(async (id) => {
-        try {
-          const page = await notion.pages.retrieve({ page_id: id });
+    const results: RelationItem[] = [];
   
-          return {
-            id,
-            title: extractPageTitleFromRetrievedPage(page),
-          };
-        } catch {
-          return { id, title: null };
-        }
-      })
-    );
+    for (const id of relationIds) {
+      try {
+        const page = await notion.pages.retrieve({ page_id: id });
+        const title = extractCategoryTitleFromRelationPage(page);
+        const key = toCategoryKey(title);
+  
+        results.push({
+          id,
+          title,
+          key,
+          error: null,
+        });
+      } catch (error) {
+        results.push({
+          id,
+          title: null,
+          key: null,
+          error: error instanceof Error ? error.message : 'relation page retrieve failed',
+        });
+      }
+    }
+  
+    return results;
+  }
+  
+  function logOutgoingQueryUrl(dataSourceId: string) {
+    const peek = `${dataSourceId.slice(0, 4)}…${dataSourceId.slice(-4)}`;
+    console.log(`[api/bookshelves] POST ${NOTION_API_V1}/data_sources/${peek}/query`);
   }
   
   async function queryAllPages(notion: Client, dataSourceId: string): Promise<QueryPageResult[]> {
@@ -259,6 +310,7 @@ import {
       }
   
       if (!response.has_more || !response.next_cursor) break;
+  
       cursor = response.next_cursor;
     }
   
@@ -310,28 +362,40 @@ import {
         pages.map(async (page) => {
           const properties = page.properties ?? {};
   
-          const categoryIds = getCategoryIds(properties);
-          const relationCategories = await resolveCategoryRelations(notion, categoryIds);
+          const relationIds = getCategoryRelationIds(properties);
+          const relationCategories = await resolveCategoryRelations(notion, relationIds);
   
-          const directCategories = getDirectCategoryNames(properties).map((title, index) => ({
-            id: `direct-${index}-${title}`,
-            title,
-          }));
+          const categoryKeys = Array.from(
+            new Set(relationCategories.map((item) => item.key).filter(Boolean))
+          ) as string[];
   
-          const category = [...relationCategories, ...directCategories];
-  
-          const categoryNames = category
-            .map((item) => normalizeCategoryName(item.title))
+          const categoryLabels = categoryKeys
+            .map((key) => toCategoryLabel(key))
             .filter(Boolean) as string[];
   
+          const ratingText = getRatingText(properties);
+  
           return {
+            id: page.id ?? null,
+            url: page.url ?? null,
+  
             title: readTitleFromProperties(properties),
             cover: getCoverUrl(properties),
             author: getAuthor(properties),
             status: getStatusName(properties),
-            category,
-            categoryNames,
-            progress: parseProgressFormula(properties),
+  
+            category: relationCategories,
+            categoryRelationIds: relationIds,
+            categoryRawTexts: relationCategories
+              .map((item) => item.title)
+              .filter(Boolean),
+            categoryKeys,
+            categoryLabels,
+            primaryCategoryKey: categoryKeys[0] ?? null,
+            primaryCategoryLabel: categoryLabels[0] ?? null,
+  
+            ratingText,
+            rating: parseRatingValue(ratingText),
           };
         })
       );
@@ -380,7 +444,14 @@ import {
         },
       });
   
-      return NextResponse.json({ ok: true, id: created.id }, { status: 201 });
+      return NextResponse.json(
+        {
+          ok: true,
+          id: created.id,
+          url: (created as { url?: string }).url ?? null,
+        },
+        { status: 201 }
+      );
     } catch (error) {
       if (APIResponseError.isAPIResponseError(error)) {
         return NextResponse.json(
