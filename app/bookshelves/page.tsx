@@ -654,13 +654,16 @@ export default function BookShelvesPage() {
         }
 
         .page {
+          position: fixed;
+          inset: 0;
           width: 100%;
-          min-height: 100vh;
+          height: 100%;
+          min-height: 0vh;
           background: #ffffff;
           display: flex;
           align-items: center;
           justify-content: center;
-          padding: 10px;
+          padding: 0px;
           overflow: hidden;
           font-family:
             -apple-system,
