@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 type CategoryItem = {
   id: string;
@@ -25,6 +25,10 @@ type BookItem = {
   rating?: number | null;
 };
 
+const BASE_WIDTH = 560;
+const BASE_HEIGHT = 415;
+const PAGE_SIZE = 7;
+
 const CATEGORY_TABS = [
   { label: '전체', key: 'ALL' },
   { label: 'BL', key: 'BL' },
@@ -48,8 +52,6 @@ const GENRE_STYLE: Record<string, { label: string; color: string; bg: string }> 
   LITERATURE: { label: '일반서적', color: '#8B5CF6', bg: '#F3EFFF' },
 };
 
-const PAGE_SIZE = 7;
-
 function toCategoryKey(value: string | null | undefined) {
   if (!value) return null;
 
@@ -63,22 +65,10 @@ function toCategoryKey(value: string | null | undefined) {
 
   if (compact === 'BL' || compact === '비엘') return 'BL';
   if (compact === 'ROMANCE' || compact === '로맨스') return 'ROMANCE';
-
-  if (
-    compact === 'RO-FAN' ||
-    compact === 'ROFAN' ||
-    compact === '로판' ||
-    compact === '로맨스판타지'
-  ) {
+  if (compact === 'RO-FAN' || compact === 'ROFAN' || compact === '로판' || compact === '로맨스판타지') {
     return 'RO-FAN';
   }
-
-  if (
-    compact === 'LITERATURE' ||
-    compact === '일반' ||
-    compact === '일반서적' ||
-    compact === '문학'
-  ) {
+  if (compact === 'LITERATURE' || compact === '일반' || compact === '일반서적' || compact === '문학') {
     return 'LITERATURE';
   }
 
@@ -109,24 +99,11 @@ function getPrimaryCategoryKey(book: BookItem) {
 
 function getStatusInfo(status: string | null) {
   if (!status) return STATUS_STYLE['책바구니'];
-
-  return (
-    STATUS_STYLE[status] ?? {
-      label: status,
-      color: '#9CA3AF',
-      bg: '#F3F4F6',
-    }
-  );
+  return STATUS_STYLE[status] ?? { label: status, color: '#9CA3AF', bg: '#F3F4F6' };
 }
 
 function getGenreInfo(categoryKey: string) {
-  return (
-    GENRE_STYLE[categoryKey] ?? {
-      label: categoryKey,
-      color: '#6B7280',
-      bg: '#F3F4F6',
-    }
-  );
+  return GENRE_STYLE[categoryKey] ?? { label: categoryKey, color: '#6B7280', bg: '#F3F4F6' };
 }
 
 function StarRating({ rating }: { rating: number | null | undefined }) {
@@ -139,24 +116,21 @@ function StarRating({ rating }: { rating: number | null | undefined }) {
 
   return (
     <div className="starRating" aria-label={`${safeRating}점`}>
-      {Array.from({ length: 5 }, (_, index) => {
-        const active = index < safeRating;
-
-        return (
-          <span
-            key={index}
-            className={active ? 'starItem activeStar' : 'starItem inactiveStar'}
-          >
-            ★
-          </span>
-        );
-      })}
+      {Array.from({ length: 5 }, (_, index) => (
+        <span key={index} className={index < safeRating ? 'starItem activeStar' : 'starItem inactiveStar'}>
+          ★
+        </span>
+      ))}
     </div>
   );
 }
 
 export default function BookShelvesPage() {
+  const wrapRef = useRef<HTMLElement | null>(null);
+  const [scale, setScale] = useState(1);
+
   const [books, setBooks] = useState<BookItem[]>([]);
+  const [selectedBook, setSelectedBook] = useState<BookItem | null>(null);
   const [activeCategory, setActiveCategory] = useState<string>('ALL');
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
@@ -164,6 +138,19 @@ export default function BookShelvesPage() {
   const [error, setError] = useState('');
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+
+  useEffect(() => {
+    const element = wrapRef.current;
+    if (!element) return;
+
+    const observer = new ResizeObserver(([entry]) => {
+      const width = entry.contentRect.width;
+      setScale(Math.min(1, width / BASE_WIDTH));
+    });
+
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
 
   async function loadBooks() {
     try {
@@ -189,6 +176,9 @@ export default function BookShelvesPage() {
   }
 
   async function handleAddBook() {
+    const confirmed = window.confirm('새 책 페이지를 추가할까요?');
+    if (!confirmed) return;
+
     try {
       setCreating(true);
       setError('');
@@ -204,6 +194,10 @@ export default function BookShelvesPage() {
       }
 
       await loadBooks();
+
+      if (data?.url) {
+        window.open(data.url, '_blank', 'noopener,noreferrer');
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : '오류가 발생했습니다.');
     } finally {
@@ -254,221 +248,297 @@ export default function BookShelvesPage() {
     ? `${filteredBooks.length}개 검색됨 · 7개씩 표시`
     : `${filteredBooks.length}개 · 7개씩 표시`;
 
+  const selectedStatus = selectedBook ? getStatusInfo(selectedBook.status) : null;
+  const selectedCategoryKey = selectedBook ? getPrimaryCategoryKey(selectedBook) : null;
+  const selectedGenre = selectedCategoryKey ? getGenreInfo(selectedCategoryKey) : null;
+
   return (
-    <main className="page">
-      <section className="widget">
-        <header className="topBar">
-          <div className="windowDots">
-            <span className="dot red" />
-            <span className="dot yellow" />
-            <span className="dot green" />
-          </div>
-
-          <h1>BOOK SHELVES</h1>
-
-          <button
-            type="button"
-            className={`searchButton ${searchOpen ? 'on' : ''}`}
-            onClick={() => setSearchOpen((prev) => !prev)}
-            aria-label="도서 검색"
-            title="도서 검색"
-          >
-            ⌕
-          </button>
-
-          <button
-            type="button"
-            className="addButton"
-            onClick={handleAddBook}
-            disabled={creating}
-            aria-label="새 책 추가"
-            title="새 책 추가"
-          >
-            +
-          </button>
-
-          {searchOpen && (
-            <div className="searchPopover">
-              <span className="searchIcon">⌕</span>
-              <input
-                value={searchQuery}
-                onChange={(event) => setSearchQuery(event.target.value)}
-                placeholder="책 제목, 저자 검색"
-                autoFocus
-              />
-              {searchQuery && (
-                <button
-                  type="button"
-                  className="clearSearch"
-                  onClick={() => setSearchQuery('')}
-                  aria-label="검색어 지우기"
-                >
-                  ×
-                </button>
-              )}
+    <main className="page" ref={wrapRef}>
+      <div
+        className="scaleBox"
+        style={{
+          width: BASE_WIDTH * scale,
+          height: BASE_HEIGHT * scale,
+        }}
+      >
+        <section
+          className={`widget ${selectedBook ? 'detailOpen' : ''}`}
+          style={{
+            transform: `scale(${scale})`,
+          }}
+        >
+          <header className="topBar">
+            <div className="windowDots">
+              <span className="dot red" />
+              <span className="dot yellow" />
+              <span className="dot green" />
             </div>
-          )}
-        </header>
 
-        <nav className="tabs">
-          {CATEGORY_TABS.map((tab) => (
+            <h1>BOOK SHELVES</h1>
+
             <button
-              key={tab.key}
               type="button"
-              className={`tab ${activeCategory === tab.key ? 'active' : ''}`}
-              onClick={() => setActiveCategory(tab.key)}
+              className={`searchButton ${searchOpen ? 'on' : ''}`}
+              onClick={() => setSearchOpen((prev) => !prev)}
+              aria-label="도서 검색"
+              title="도서 검색"
             >
-              {tab.label}
-              {activeCategory === tab.key && <span className="activeDot" />}
+              ⌕
             </button>
-          ))}
-        </nav>
 
-        <section className="tableCard">
-          <div className="tableHeader">
-            <span className="headStatus">상태</span>
-            <span className="headTitle">책 제목</span>
-            <span className="headAuthor">저자</span>
-            <span className="headGenre">장르</span>
-            <span className="headRating">평점</span>
-          </div>
+            <button
+              type="button"
+              className="addButton"
+              onClick={handleAddBook}
+              disabled={creating}
+              aria-label="새 책 추가"
+              title="새 책 추가"
+            >
+              +
+            </button>
 
-          <div className="tableBody">
-            {loading ? (
-              <div className="empty">불러오는 중...</div>
-            ) : error ? (
-              <div className="empty error">{error}</div>
-            ) : visibleBooks.length === 0 ? (
-              <div className="empty">
-                {searchQuery ? '검색 결과가 없습니다.' : '표시할 책이 없습니다.'}
+            {searchOpen && (
+              <div className="searchPopover">
+                <span className="searchIcon">⌕</span>
+                <input
+                  value={searchQuery}
+                  onChange={(event) => setSearchQuery(event.target.value)}
+                  placeholder="책 제목, 저자 검색"
+                  autoFocus
+                />
+                {searchQuery && (
+                  <button
+                    type="button"
+                    className="clearSearch"
+                    onClick={() => setSearchQuery('')}
+                    aria-label="검색어 지우기"
+                  >
+                    ×
+                  </button>
+                )}
               </div>
-            ) : (
-              visibleBooks.map((book, index) => {
-                const status = getStatusInfo(book.status);
-                const categoryKey = getPrimaryCategoryKey(book);
-                const genre = categoryKey ? getGenreInfo(categoryKey) : null;
+            )}
+          </header>
 
-                return (
-                  <article className="tableRow" key={`${book.title}-${index}`}>
-                    <div className="statusCell">
-                      <span
-                        className="statusDot"
-                        style={{
-                          backgroundColor: status.color,
-                          boxShadow: `0 0 0 3px ${status.bg}`,
-                        }}
-                      />
-                      <span>{status.label}</span>
-                    </div>
+          <nav className="tabs">
+            {CATEGORY_TABS.map((tab) => (
+              <button
+                key={tab.key}
+                type="button"
+                className={`tab ${activeCategory === tab.key ? 'active' : ''}`}
+                onClick={() => setActiveCategory(tab.key)}
+              >
+                {tab.label}
+                {activeCategory === tab.key && <span className="activeDot" />}
+              </button>
+            ))}
+          </nav>
 
-                    <div className="coverCell">
-                      <div className="coverBox">
-                        {book.cover ? (
-                          <img src={book.cover} alt="" className="cover" loading="lazy" />
-                        ) : (
-                          <div className="coverPlaceholder">BOOK</div>
-                        )}
+          <section className="tableCard">
+            <div className="tableHeader">
+              <span className="headStatus">상태</span>
+              <span className="headTitle">책 제목</span>
+              <span className="headAuthor">저자</span>
+              <span className="headGenre">장르</span>
+              <span className="headRating">평점</span>
+            </div>
+
+            <div className="tableBody">
+              {loading ? (
+                <div className="empty">불러오는 중...</div>
+              ) : error ? (
+                <div className="empty error">{error}</div>
+              ) : visibleBooks.length === 0 ? (
+                <div className="empty">
+                  {searchQuery ? '검색 결과가 없습니다.' : '표시할 책이 없습니다.'}
+                </div>
+              ) : (
+                visibleBooks.map((book, index) => {
+                  const status = getStatusInfo(book.status);
+                  const categoryKey = getPrimaryCategoryKey(book);
+                  const genre = categoryKey ? getGenreInfo(categoryKey) : null;
+
+                  return (
+                    <article className="tableRow" key={`${book.title}-${index}`}>
+                      <div className="statusCell">
+                        <span
+                          className="statusDot"
+                          style={{
+                            backgroundColor: status.color,
+                            boxShadow: `0 0 0 3px ${status.bg}`,
+                          }}
+                        />
+                        <span>{status.label}</span>
                       </div>
-                    </div>
 
-                    <div className="titleCell">
-                      {book.url ? (
-                        <a
-                          className="bookTitle bookLink"
-                          href={book.url}
-                          target="_blank"
-                          rel="noreferrer"
+                      <div className="coverCell">
+                        <div className="coverBox">
+                          {book.cover ? (
+                            <img src={book.cover} alt="" className="cover" loading="lazy" />
+                          ) : (
+                            <div className="coverPlaceholder">BOOK</div>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="titleCell">
+                        <button
+                          type="button"
+                          className="bookTitle bookButton"
+                          onClick={() => setSelectedBook(book)}
                           title={book.title ?? '제목 없음'}
                         >
                           {book.title ?? '제목 없음'}
-                        </a>
-                      ) : (
-                        <span className="bookTitle">{book.title ?? '제목 없음'}</span>
-                      )}
-                    </div>
+                        </button>
+                      </div>
 
-                    <div className="authorCell">{book.author ?? '-'}</div>
+                      <div className="authorCell">{book.author ?? '-'}</div>
 
-                    <div className="genreCell">
-                      {genre ? (
-                        <span
-                          className="genrePill"
-                          style={{
-                            color: genre.color,
-                            backgroundColor: genre.bg,
-                          }}
-                        >
-                          {genre.label}
-                        </span>
-                      ) : (
-                        <span className="noRating">-</span>
-                      )}
-                    </div>
+                      <div className="genreCell">
+                        {genre ? (
+                          <span
+                            className="genrePill"
+                            style={{
+                              color: genre.color,
+                              backgroundColor: genre.bg,
+                            }}
+                          >
+                            {genre.label}
+                          </span>
+                        ) : (
+                          <span className="noRating">-</span>
+                        )}
+                      </div>
 
-                    <div className="ratingCell">
-                      <StarRating rating={book.rating} />
-                    </div>
-                  </article>
-                );
-              })
-            )}
-          </div>
-        </section>
+                      <div className="ratingCell">
+                        <StarRating rating={book.rating} />
+                      </div>
+                    </article>
+                  );
+                })
+              )}
+            </div>
+          </section>
 
-        <footer className="footer">
-          <p>{footerLabel}</p>
+          <footer className="footer">
+            <p>{footerLabel}</p>
 
-          <div className="pagination">
+            <div className="pagination">
+              <button
+                type="button"
+                onClick={() => setPage((prev) => Math.max(1, prev - 1))}
+                disabled={page === 1}
+                aria-label="이전 페이지"
+              >
+                ‹
+              </button>
+
+              {Array.from({ length: totalPages }, (_, i) => i + 1)
+                .filter((p) => {
+                  if (totalPages <= 5) return true;
+                  return p === 1 || p === totalPages || Math.abs(p - page) <= 1;
+                })
+                .map((p, idx, arr) => (
+                  <span key={p} className="pageGroup">
+                    {idx > 0 && p - arr[idx - 1] > 1 && <span className="ellipsis">…</span>}
+
+                    <button
+                      type="button"
+                      className={page === p ? 'current' : ''}
+                      onClick={() => setPage(p)}
+                    >
+                      {p}
+                    </button>
+                  </span>
+                ))}
+
+              <button
+                type="button"
+                onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))}
+                disabled={page === totalPages}
+                aria-label="다음 페이지"
+              >
+                ›
+              </button>
+            </div>
+
             <button
               type="button"
-              onClick={() => setPage((prev) => Math.max(1, prev - 1))}
-              disabled={page === 1}
-              aria-label="이전 페이지"
+              className="refreshButton"
+              onClick={loadBooks}
+              disabled={loading}
+              aria-label="새로고침"
+              title="새로고침"
             >
-              ‹
+              ↻
             </button>
+          </footer>
 
-            {Array.from({ length: totalPages }, (_, i) => i + 1)
-              .filter((p) => {
-                if (totalPages <= 5) return true;
-                return p === 1 || p === totalPages || Math.abs(p - page) <= 1;
-              })
-              .map((p, idx, arr) => (
-                <span key={p} className="pageGroup">
-                  {idx > 0 && p - arr[idx - 1] > 1 && <span className="ellipsis">…</span>}
+          {selectedBook && (
+            <aside className="detailPanel">
+              <button
+                type="button"
+                className="closeDetail"
+                onClick={() => setSelectedBook(null)}
+                aria-label="상세 닫기"
+              >
+                ×
+              </button>
 
-                  <button
-                    type="button"
-                    className={page === p ? 'current' : ''}
-                    onClick={() => setPage(p)}
+              <div className="detailCover">
+                {selectedBook.cover ? (
+                  <img src={selectedBook.cover} alt="" />
+                ) : (
+                  <div className="detailCoverPlaceholder">BOOK</div>
+                )}
+              </div>
+
+              <h2>{selectedBook.title ?? '제목 없음'}</h2>
+              <p className="detailAuthor">{selectedBook.author ?? '저자 미상'}</p>
+
+              <div className="detailMeta">
+                {selectedStatus && (
+                  <span
+                    className="detailStatus"
+                    style={{
+                      color: selectedStatus.color,
+                      backgroundColor: selectedStatus.bg,
+                    }}
                   >
-                    {p}
-                  </button>
-                </span>
-              ))}
+                    {selectedStatus.label}
+                  </span>
+                )}
 
-            <button
-              type="button"
-              onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))}
-              disabled={page === totalPages}
-              aria-label="다음 페이지"
-            >
-              ›
-            </button>
-          </div>
+                {selectedGenre && (
+                  <span
+                    className="detailGenre"
+                    style={{
+                      color: selectedGenre.color,
+                      backgroundColor: selectedGenre.bg,
+                    }}
+                  >
+                    {selectedGenre.label}
+                  </span>
+                )}
+              </div>
 
-          <button
-            type="button"
-            className="refreshButton"
-            onClick={loadBooks}
-            disabled={loading}
-            aria-label="새로고침"
-            title="새로고침"
-          >
-            ↻
-          </button>
-        </footer>
-      </section>
+              <div className="detailRating">
+                <StarRating rating={selectedBook.rating} />
+              </div>
+
+              {selectedBook.url && (
+                <button
+                  type="button"
+                  className="openNotion"
+                  onClick={() => window.open(selectedBook.url ?? '', '_blank', 'noopener,noreferrer')}
+                >
+                  Notion에서 열기
+                </button>
+              )}
+            </aside>
+          )}
+        </section>
+      </div>
 
       <style jsx>{`
         :global(html),
@@ -490,7 +560,7 @@ export default function BookShelvesPage() {
           align-items: center;
           justify-content: center;
           padding: 10px;
-          overflow: visible;
+          overflow: hidden;
           font-family:
             -apple-system,
             BlinkMacSystemFont,
@@ -499,6 +569,11 @@ export default function BookShelvesPage() {
             'Apple SD Gothic Neo',
             sans-serif;
           color: var(--text-main);
+        }
+
+        .scaleBox {
+          position: relative;
+          flex-shrink: 0;
         }
 
         .widget {
@@ -514,7 +589,7 @@ export default function BookShelvesPage() {
 
           width: 560px;
           height: 415px;
-          flex: 0 0 560px;
+          transform-origin: top left;
           background: var(--widget-bg);
           border: 1px solid var(--border);
           border-radius: 18px;
@@ -524,8 +599,10 @@ export default function BookShelvesPage() {
           padding: 12px;
           display: flex;
           flex-direction: column;
-          overflow: visible;
-          position: relative;
+          overflow: hidden;
+          position: absolute;
+          top: 0;
+          left: 0;
         }
 
         @media (prefers-color-scheme: dark) {
@@ -738,7 +815,7 @@ export default function BookShelvesPage() {
 
         .headStatus {
           text-align: left;
-          padding-left: 28px;
+          padding-left: 22px;
         }
 
         .headAuthor,
@@ -829,6 +906,7 @@ export default function BookShelvesPage() {
 
         .bookTitle {
           min-width: 0;
+          width: 100%;
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
@@ -837,11 +915,16 @@ export default function BookShelvesPage() {
           display: block;
         }
 
-        .bookLink {
-          text-decoration: none;
+        .bookButton {
+          border: 0;
+          background: transparent;
+          padding: 0;
+          text-align: left;
+          cursor: pointer;
+          font: inherit;
         }
 
-        .bookLink:hover {
+        .bookButton:hover {
           color: #3b82f6;
         }
 
@@ -1002,6 +1085,142 @@ export default function BookShelvesPage() {
         .refreshButton:disabled {
           opacity: 0.45;
           cursor: default;
+        }
+
+        .detailPanel {
+          position: absolute;
+          top: 12px;
+          right: 12px;
+          width: 176px;
+          height: calc(100% - 24px);
+          border-radius: 15px;
+          border: 1px solid var(--border);
+          background: rgba(255, 255, 255, 0.92);
+          backdrop-filter: blur(18px);
+          box-shadow: -8px 0 28px rgba(17, 24, 39, 0.14);
+          z-index: 30;
+          padding: 14px 12px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          animation: slideIn 0.18s ease-out;
+        }
+
+        @media (prefers-color-scheme: dark) {
+          .detailPanel {
+            background: rgba(42, 43, 49, 0.94);
+          }
+        }
+
+        @keyframes slideIn {
+          from {
+            transform: translateX(12px);
+            opacity: 0;
+          }
+          to {
+            transform: translateX(0);
+            opacity: 1;
+          }
+        }
+
+        .closeDetail {
+          position: absolute;
+          top: 8px;
+          right: 8px;
+          width: 20px;
+          height: 20px;
+          border: 0;
+          border-radius: 999px;
+          background: var(--tab-bg);
+          color: var(--text-sub);
+          cursor: pointer;
+          font-size: 13px;
+        }
+
+        .detailCover {
+          width: 54px;
+          height: 76px;
+          border-radius: 9px;
+          overflow: hidden;
+          background: var(--track);
+          box-shadow: 0 6px 16px var(--shadow);
+          margin-top: 12px;
+        }
+
+        .detailCover img {
+          width: 100%;
+          height: 100%;
+          display: block;
+          object-fit: cover;
+          object-position: center;
+        }
+
+        .detailCoverPlaceholder {
+          width: 100%;
+          height: 100%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: var(--text-sub);
+          font-size: 8px;
+          font-weight: 700;
+        }
+
+        .detailPanel h2 {
+          width: 100%;
+          margin: 12px 0 4px;
+          color: var(--text-main);
+          font-size: 12px;
+          font-weight: 800;
+          line-height: 1.35;
+          text-align: center;
+          word-break: keep-all;
+        }
+
+        .detailAuthor {
+          margin: 0;
+          color: var(--text-sub);
+          font-size: 9px;
+          font-weight: 650;
+          text-align: center;
+        }
+
+        .detailMeta {
+          display: flex;
+          flex-wrap: wrap;
+          justify-content: center;
+          gap: 5px;
+          margin-top: 12px;
+        }
+
+        .detailStatus,
+        .detailGenre {
+          height: 18px;
+          padding: 0 8px;
+          border-radius: 999px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 8px;
+          font-weight: 750;
+        }
+
+        .detailRating {
+          margin-top: 12px;
+        }
+
+        .openNotion {
+          margin-top: auto;
+          width: 100%;
+          height: 28px;
+          border: 1px solid var(--border);
+          border-radius: 10px;
+          background: var(--card-bg);
+          color: var(--text-main);
+          font-size: 9px;
+          font-weight: 750;
+          cursor: pointer;
+          box-shadow: 0 5px 12px var(--shadow);
         }
       `}</style>
     </main>
