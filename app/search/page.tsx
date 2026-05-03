@@ -226,7 +226,19 @@ export default function SearchPage() {
           margin: 0;
           padding: 0;
           overflow: hidden;
-          background: transparent;
+          background: #ffffff;
+        }
+
+        @media (prefers-color-scheme: dark) {
+          html,
+          body {
+            background: #191919;
+          }
+        }
+
+        #__next,
+        main {
+          background: transparent !important;
         }
       `}</style>
 
@@ -237,9 +249,15 @@ export default function SearchPage() {
           display: flex;
           justify-content: center;
           align-items: center;
-          background: transparent;
+          background: #ffffff;
           overflow: hidden;
           box-sizing: border-box;
+        }
+
+        @media (prefers-color-scheme: dark) {
+          .page {
+            background: #191919;
+          }
         }
 
         .widget {
@@ -251,7 +269,7 @@ export default function SearchPage() {
           background: var(--bg);
           color: var(--text);
           font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
-          box-shadow: 0 8px 22px rgba(0, 0, 0, 0.04);
+          box-shadow: none;
           box-sizing: border-box;
         }
 
@@ -343,16 +361,16 @@ export default function SearchPage() {
         .searchButton svg {
           width: 13px;
           height: 13px;
-          display: block;   /* ⭐ 핵심 */
+          display: block;
         }
 
         .searchButton span {
-          display: block;   /* ⭐ 같이 맞춰줘야 완벽 */
+          display: block;
         }
 
         .searchButton:hover,
         .searchButton:focus-visible {
-          background: #f0f0f0;
+          background: var(--button-hover);
           outline: none;
         }
 
@@ -512,6 +530,7 @@ export default function SearchPage() {
           --back: #a8a8a8;
           --no-cover: #eaeaea;
           --scroll: #d6d6d6;
+          --button-hover: #f0f0f0;
         }
 
         @media (prefers-color-scheme: dark) {
@@ -530,6 +549,7 @@ export default function SearchPage() {
             --back: #8e8e8e;
             --no-cover: #2f2f2f;
             --scroll: #555555;
+            --button-hover: #2a2a2a;
           }
         }
       `}</style>
