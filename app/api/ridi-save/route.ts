@@ -4,38 +4,32 @@ import { NextRequest, NextResponse } from "next/server";
 import { Client } from "@notionhq/client";
 
 const notion = new Client({
-  auth: process.env.NOTION_API_KEY,
+  auth: process.env.NOTION_TOKEN,
 });
 
 export async function POST(req: NextRequest) {
   try {
-    const { title, author, cover, url } = await req.json();
+    const { title, author, cover } = await req.json();
 
     if (!title) {
-      return NextResponse.json({ error: "title 없음" }, { status: 400 });
+      return NextResponse.json({ error: "제목 없음" }, { status: 400 });
     }
 
-    const databaseId = process.env.NOTION_LIBRARY_DATABASE_ID;
+    if (!process.env.NOTION_TOKEN) {
+      return NextResponse.json({ error: "NOTION_TOKEN 없음" }, { status: 500 });
+    }
 
-    if (!databaseId) {
+    if (!process.env.NOTION_DATABASE_ID) {
       return NextResponse.json(
-        { error: "NOTION_LIBRARY_DATABASE_ID 없음" },
+        { error: "NOTION_DATABASE_ID 없음" },
         { status: 500 }
       );
     }
 
     await notion.pages.create({
       parent: {
-        database_id: databaseId,
+        database_id: process.env.NOTION_DATABASE_ID,
       },
-      cover: cover
-        ? {
-            type: "external",
-            external: {
-              url: cover,
-            },
-          }
-        : undefined,
       properties: {
         제목: {
           title: [
@@ -56,17 +50,33 @@ export async function POST(req: NextRequest) {
           ],
         },
         cover: {
-          url: cover || null,
-        },
-        RIDI: {
-          url: url || null,
+          files: cover
+            ? [
+                {
+                  name: `${title} cover`,
+                  type: "external",
+                  external: {
+                    url: cover,
+                  },
+                },
+              ]
+            : [],
         },
       },
     });
 
     return NextResponse.json({ ok: true });
-  } catch (error) {
-    console.error(error);
-    return NextResponse.json({ error: "저장 실패" }, { status: 500 });
+  } catch (error: any) {
+    console.error("RIDI SAVE ERROR:", error);
+
+    return NextResponse.json(
+      {
+        error:
+          error?.body ||
+          error?.message ||
+          "저장 실패: 노션 DB 속성명/권한 확인 필요",
+      },
+      { status: 500 }
+    );
   }
 }
