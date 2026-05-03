@@ -76,7 +76,7 @@ export default function SearchPage() {
       }
 
       setMessage("✓ Saved!");
-      setTimeout(() => setMessage(""), 1800);
+      setTimeout(() => setMessage(""), 1600);
     } catch {
       setMessage("저장 실패");
     }
@@ -149,6 +149,7 @@ export default function SearchPage() {
                     ) : (
                       <div className="noCover" />
                     )}
+
                     <div className="bookInfo">
                       <div className="bookTitle">{book.title}</div>
                       <div className="author">{book.author}</div>
@@ -172,67 +173,58 @@ export default function SearchPage() {
 
       <style jsx>{`
         .page {
-            width: 100vw;
-            height: 100vh;
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            background: transparent;
-            padding: 0;
-            overflow: hidden;
-            box-sizing: border-box;
-          }
+          width: 100vw;
+          height: 100vh;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          background: transparent;
+        }
 
+        /* 🔥 여기 핵심 (크기 변경) */
         .widget {
-          width: 300px;
-          height: 270px;
-          min-width: 300px;
-          max-width: 300px;
-          min-height: 270px;
-          max-height: 270px;
+          width: 320px;
+          height: 260px;
           border: 1px solid var(--border);
-          border-radius: 16px;
+          border-radius: 13px;
           overflow: hidden;
           background: var(--bg);
           color: var(--text);
           font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-          box-shadow: none;
         }
 
         .topbar {
-          height: 38px;
+          height: 34px;
           background: var(--topbar);
           border-bottom: 1px solid var(--border);
           display: flex;
           align-items: center;
           justify-content: space-between;
-          padding: 0 14px;
-          box-sizing: border-box;
+          padding: 0 12px;
         }
 
         .title {
           display: flex;
-          gap: 7px;
+          gap: 6px;
           align-items: center;
-          font-size: 13px;
+          font-size: 12px;
           font-weight: 700;
         }
 
         .dots {
           display: flex;
-          gap: 7px;
+          gap: 6px;
         }
 
         .dots span {
-          width: 10px;
-          height: 10px;
+          width: 8px;
+          height: 8px;
           border-radius: 50%;
           background: var(--dot);
         }
 
         .home {
-          height: 232px;
+          height: 226px;
           display: flex;
           flex-direction: column;
           align-items: center;
@@ -240,82 +232,57 @@ export default function SearchPage() {
         }
 
         .time {
-          font-size: 48px;
-          line-height: 1;
+          font-size: 42px;
           font-weight: 700;
-          color: var(--time);
           margin-bottom: 10px;
         }
 
         .date {
-          font-size: 15px;
-          letter-spacing: 3px;
-          color: var(--muted);
-          font-weight: 600;
-          margin-bottom: 42px;
+          font-size: 13px;
+          letter-spacing: 2px;
+          margin-bottom: 36px;
         }
 
         .searchButton {
-          border: none;
+          font-size: 15px;
           background: transparent;
-          color: var(--text);
-          font-size: 16px;
+          border: none;
           cursor: pointer;
         }
 
         .searchPage {
-          height: 232px;
+          height: 226px;
           display: flex;
           flex-direction: column;
         }
 
         .searchHeader {
-          height: 62px;
+          height: 52px;
           border-bottom: 1px solid var(--line);
           display: flex;
           align-items: center;
-          gap: 10px;
-          padding: 0 14px;
-          box-sizing: border-box;
-          flex-shrink: 0;
+          gap: 8px;
+          padding: 0 12px;
         }
 
         .back {
-          width: 28px;
-          min-width: 28px;
+          font-size: 22px;
           border: none;
           background: transparent;
-          font-size: 28px;
-          color: var(--back);
           cursor: pointer;
-          padding: 0;
         }
 
         input {
-          width: 220px;
-          height: 40px;
-          border: 1px solid var(--input-border);
-          border-radius: 8px;
-          padding: 0 12px;
-          font-size: 16px;
-          color: var(--text);
-          background: var(--input-bg);
-          outline: none;
-          box-sizing: border-box;
+          width: 240px;
+          height: 34px;
+          border-radius: 7px;
+          padding: 0 10px;
         }
 
         .resultArea {
           flex: 1;
           overflow-y: auto;
-          padding: 14px 18px;
-          box-sizing: border-box;
-        }
-
-        .message {
-          text-align: center;
-          font-size: 15px;
-          color: var(--text);
-          margin-bottom: 12px;
+          padding: 12px;
         }
 
         .empty {
@@ -323,54 +290,31 @@ export default function SearchPage() {
           display: flex;
           align-items: center;
           justify-content: center;
-          text-align: center;
-          font-size: 15px;
-          color: var(--text);
         }
 
         .bookItem {
-          width: 100%;
           display: flex;
-          gap: 12px;
-          align-items: center;
-          margin-bottom: 14px;
-          cursor: pointer;
+          gap: 10px;
+          margin-bottom: 12px;
           border: none;
           background: transparent;
-          text-align: left;
-          padding: 0;
+          cursor: pointer;
         }
 
         .bookItem img,
         .noCover {
-          width: 42px;
-          height: 58px;
+          width: 36px;
+          height: 50px;
           border-radius: 4px;
-          object-fit: cover;
-          background: var(--no-cover);
-          flex-shrink: 0;
-        }
-
-        .bookInfo {
-          min-width: 0;
         }
 
         .bookTitle {
-          font-size: 16px;
+          font-size: 13px;
           font-weight: 700;
-          color: var(--text);
-          margin-bottom: 5px;
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
         }
 
         .author {
-          font-size: 14px;
-          color: var(--muted);
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
+          font-size: 11px;
         }
 
         :global(:root) {
@@ -378,31 +322,8 @@ export default function SearchPage() {
           --topbar: #eeeeee;
           --border: #dedede;
           --line: #eeeeee;
-          --input-bg: #ffffff;
-          --input-border: #e5e5e5;
           --text: #777777;
-          --muted: #aaaaaa;
-          --time: #858585;
           --dot: #c7c7c7;
-          --back: #b4b4b4;
-          --no-cover: #eaeaea;
-        }
-
-        @media (prefers-color-scheme: dark) {
-          :global(:root) {
-            --bg: #191919;
-            --topbar: #2f2f2f;
-            --border: #3a3a3a;
-            --line: #303030;
-            --input-bg: #191919;
-            --input-border: #3a3a3a;
-            --text: #b8b8b8;
-            --muted: #8e8e8e;
-            --time: #a8a8a8;
-            --dot: #777777;
-            --back: #8e8e8e;
-            --no-cover: #2f2f2f;
-          }
         }
       `}</style>
     </main>
