@@ -15,20 +15,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "제목 없음" }, { status: 400 });
     }
 
-    if (!process.env.NOTION_TOKEN) {
-      return NextResponse.json({ error: "NOTION_TOKEN 없음" }, { status: 500 });
-    }
-
-    if (!process.env.NOTION_DATABASE_ID) {
-      return NextResponse.json(
-        { error: "NOTION_DATABASE_ID 없음" },
-        { status: 500 }
-      );
-    }
-
     await notion.pages.create({
       parent: {
-        database_id: process.env.NOTION_DATABASE_ID,
+        database_id: process.env.NOTION_DATABASE_ID!,
       },
       properties: {
         제목: {
@@ -53,7 +42,7 @@ export async function POST(req: NextRequest) {
           files: cover
             ? [
                 {
-                  name: `${title} cover`,
+                  name: "cover",
                   type: "external",
                   external: {
                     url: cover,
@@ -72,9 +61,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       {
         error:
-          error?.body ||
           error?.message ||
-          "저장 실패: 노션 DB 속성명/권한 확인 필요",
+          error?.body ||
+          "저장 실패",
       },
       { status: 500 }
     );

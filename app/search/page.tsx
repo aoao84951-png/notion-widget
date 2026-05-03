@@ -14,8 +14,7 @@ export default function SearchPage() {
   const [query, setQuery] = useState("");
   const [books, setBooks] = useState<Book[]>([]);
   const [loading, setLoading] = useState(false);
-  const [saved, setSaved] = useState(false);
-  const [error, setError] = useState("");
+  const [message, setMessage] = useState("");
   const [now, setNow] = useState(new Date());
 
   useEffect(() => {
@@ -37,8 +36,7 @@ export default function SearchPage() {
 
   const handleSearch = async (value: string) => {
     setQuery(value);
-    setSaved(false);
-    setError("");
+    setMessage("");
 
     if (!value.trim()) {
       setBooks([]);
@@ -59,8 +57,7 @@ export default function SearchPage() {
   };
 
   const handleSave = async (book: Book) => {
-    setSaved(false);
-    setError("");
+    setMessage("Saving...");
 
     try {
       const res = await fetch("/api/ridi-save", {
@@ -74,14 +71,14 @@ export default function SearchPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        setError(data.error || "저장 실패");
+        setMessage(data.error || "저장 실패");
         return;
       }
 
-      setSaved(true);
-      setTimeout(() => setSaved(false), 1600);
+      setMessage("✓ Saved!");
+      setTimeout(() => setMessage(""), 1800);
     } catch {
-      setError("저장 실패");
+      setMessage("저장 실패");
     }
   };
 
@@ -90,8 +87,8 @@ export default function SearchPage() {
       <div className="widget">
         <div className="topbar">
           <div className="title">
-            <span className="icon">{isSearchMode ? "▣" : "◷"}</span>
-            <span>{isSearchMode ? "Lib" : "RIDI SEARCH"}</span>
+            <span>{isSearchMode ? "▣" : "◷"}</span>
+            <span>{isSearchMode ? "Lib" : "SOMLUTION"}</span>
           </div>
           <div className="dots">
             <span />
@@ -105,8 +102,7 @@ export default function SearchPage() {
             <div className="date">{dateText}</div>
 
             <button className="searchButton" onClick={() => setIsSearchMode(true)}>
-              <span>⌕</span>
-              search
+              ⌕ search
             </button>
           </section>
         ) : (
@@ -118,8 +114,7 @@ export default function SearchPage() {
                   setIsSearchMode(false);
                   setQuery("");
                   setBooks([]);
-                  setSaved(false);
-                  setError("");
+                  setMessage("");
                 }}
               >
                 ←
@@ -134,23 +129,10 @@ export default function SearchPage() {
             </div>
 
             <div className="resultArea">
-              {saved && <div className="saved">✓ Saved!</div>}
-              {error && <div className="error">{error}</div>}
+              {message && <div className="message">{message}</div>}
 
-              {!query && (
-                <div className="empty">
-                  <div className="cloud">☁️</div>
-                  <div>Search...</div>
-                </div>
-              )}
-
-              {query && loading && (
-                <div className="empty">
-                  <div className="cloud">☁️</div>
-                  <div>Searching...</div>
-                </div>
-              )}
-
+              {!query && !message && <div className="empty">☁️<br />Search...</div>}
+              {query && loading && <div className="empty">Searching...</div>}
               {query && !loading && books.length === 0 && (
                 <div className="empty">검색 결과 없음</div>
               )}
@@ -167,7 +149,6 @@ export default function SearchPage() {
                     ) : (
                       <div className="noCover" />
                     )}
-
                     <div className="bookInfo">
                       <div className="bookTitle">{book.title}</div>
                       <div className="author">{book.author}</div>
@@ -191,26 +172,27 @@ export default function SearchPage() {
 
       <style jsx>{`
         .page {
-          width: 100vw;
-          height: 100vh;
-          display: flex;
-          align-items: flex-start;
-          justify-content: center;
-          background: transparent;
-          overflow: hidden;
-          padding-top: 8px;
-          box-sizing: border-box;
-        }
+            width: 100vw;
+            height: 100vh;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: transparent;
+            padding: 0;
+            overflow: hidden;
+            box-sizing: border-box;
+          }
 
         .widget {
-          width: 400px;
-          height: 360px;
-          min-width: 400px;
-          max-width: 400px;
-          min-height: 360px;
-          max-height: 360px;
+          width: 300px;
+          height: 270px;
+          min-width: 300px;
+          max-width: 300px;
+          min-height: 270px;
+          max-height: 270px;
           border: 1px solid var(--border);
-          border-radius: 20px;
+          border-radius: 16px;
           overflow: hidden;
           background: var(--bg);
           color: var(--text);
@@ -219,39 +201,38 @@ export default function SearchPage() {
         }
 
         .topbar {
-          height: 50px;
+          height: 38px;
           background: var(--topbar);
           border-bottom: 1px solid var(--border);
           display: flex;
           align-items: center;
           justify-content: space-between;
-          padding: 0 18px;
+          padding: 0 14px;
           box-sizing: border-box;
         }
 
         .title {
           display: flex;
+          gap: 7px;
           align-items: center;
-          gap: 8px;
-          font-size: 16px;
+          font-size: 13px;
           font-weight: 700;
-          color: var(--text);
         }
 
         .dots {
           display: flex;
-          gap: 8px;
+          gap: 7px;
         }
 
         .dots span {
-          width: 14px;
-          height: 14px;
+          width: 10px;
+          height: 10px;
           border-radius: 50%;
           background: var(--dot);
         }
 
         .home {
-          height: 310px;
+          height: 232px;
           display: flex;
           flex-direction: column;
           align-items: center;
@@ -259,114 +240,100 @@ export default function SearchPage() {
         }
 
         .time {
-          font-size: 66px;
+          font-size: 48px;
           line-height: 1;
           font-weight: 700;
           color: var(--time);
-          margin-bottom: 14px;
+          margin-bottom: 10px;
         }
 
         .date {
-          font-size: 20px;
+          font-size: 15px;
           letter-spacing: 3px;
           color: var(--muted);
           font-weight: 600;
-          margin-bottom: 55px;
+          margin-bottom: 42px;
         }
 
         .searchButton {
           border: none;
           background: transparent;
           color: var(--text);
-          font-size: 20px;
-          display: flex;
-          align-items: center;
-          gap: 10px;
+          font-size: 16px;
           cursor: pointer;
         }
 
         .searchPage {
-          height: 310px;
+          height: 232px;
           display: flex;
           flex-direction: column;
         }
 
         .searchHeader {
-          height: 82px;
+          height: 62px;
           border-bottom: 1px solid var(--line);
           display: flex;
           align-items: center;
-          gap: 12px;
-          padding: 0 24px;
+          gap: 10px;
+          padding: 0 14px;
           box-sizing: border-box;
           flex-shrink: 0;
         }
 
         .back {
-          width: 34px;
-          min-width: 34px;
+          width: 28px;
+          min-width: 28px;
           border: none;
           background: transparent;
-          font-size: 34px;
+          font-size: 28px;
           color: var(--back);
           cursor: pointer;
-          line-height: 1;
           padding: 0;
         }
 
         input {
-          width: 270px;
-          height: 50px;
+          width: 220px;
+          height: 40px;
           border: 1px solid var(--input-border);
           border-radius: 8px;
-          padding: 0 16px;
-          font-size: 20px;
+          padding: 0 12px;
+          font-size: 16px;
           color: var(--text);
           background: var(--input-bg);
           outline: none;
           box-sizing: border-box;
         }
 
-        input::placeholder {
-          color: var(--muted);
-        }
-
         .resultArea {
           flex: 1;
           overflow-y: auto;
-          padding: 18px 28px;
+          padding: 14px 18px;
           box-sizing: border-box;
         }
 
-        .saved,
-        .error {
+        .message {
           text-align: center;
-          font-size: 18px;
+          font-size: 15px;
           color: var(--text);
-          margin: 4px 0 18px;
-        }
-
-        .error {
-          color: #d66;
+          margin-bottom: 12px;
         }
 
         .empty {
           height: 100%;
           display: flex;
-          flex-direction: column;
           align-items: center;
           justify-content: center;
-          gap: 14px;
-          font-size: 18px;
+          text-align: center;
+          font-size: 15px;
           color: var(--text);
         }
 
         .bookItem {
           width: 100%;
           display: flex;
-          gap: 14px;
+          gap: 12px;
           align-items: center;
-          margin-bottom: 18px;
+          margin-bottom: 14px;
           cursor: pointer;
           border: none;
           background: transparent;
@@ -376,8 +343,8 @@ export default function SearchPage() {
 
         .bookItem img,
         .noCover {
-          width: 44px;
-          height: 62px;
+          width: 42px;
+          height: 58px;
           border-radius: 4px;
           object-fit: cover;
           background: var(--no-cover);
@@ -389,17 +356,17 @@ export default function SearchPage() {
         }
 
         .bookTitle {
-          font-size: 18px;
+          font-size: 16px;
           font-weight: 700;
           color: var(--text);
-          margin-bottom: 6px;
+          margin-bottom: 5px;
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
         }
 
         .author {
-          font-size: 15px;
+          font-size: 14px;
           color: var(--muted);
           white-space: nowrap;
           overflow: hidden;
