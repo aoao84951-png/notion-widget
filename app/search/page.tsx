@@ -28,11 +28,11 @@ export default function SearchPage() {
     hour12: false,
   });
 
-  const dateText = now.toLocaleDateString("ko-KR", {
-    month: "long",
-    day: "numeric",
+  const dateText = now.toLocaleDateString("en-US", {
     weekday: "short",
-  });
+    month: "short",
+    day: "numeric",
+  }).toUpperCase();
 
   const handleSearch = async (value: string) => {
     setQuery(value);
@@ -62,9 +62,7 @@ export default function SearchPage() {
     try {
       const res = await fetch("/api/ridi-save", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(book),
       });
 
@@ -88,7 +86,7 @@ export default function SearchPage() {
         <div className="topbar">
           <div className="title">
             <span>{isSearchMode ? "▣" : "◷"}</span>
-            <span>{isSearchMode ? "Lib" : "SOMLUTION"}</span>
+            <span>{isSearchMode ? "Lib" : "RIDI SEARCH"}</span>
           </div>
           <div className="dots">
             <span />
@@ -179,36 +177,42 @@ export default function SearchPage() {
           justify-content: center;
           align-items: center;
           background: transparent;
+          overflow: hidden;
+          box-sizing: border-box;
         }
 
-        /* 🔥 여기 핵심 (크기 변경) */
         .widget {
-          width: 320px;
-          height: 260px;
+          width: 240px;
+          height: 216px;
           border: 1px solid var(--border);
           border-radius: 13px;
           overflow: hidden;
           background: var(--bg);
           color: var(--text);
           font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+          box-shadow: 0 8px 22px rgba(0, 0, 0, 0.04);
+          box-sizing: border-box;
         }
 
         .topbar {
-          height: 34px;
+          height: 31px;
           background: var(--topbar);
           border-bottom: 1px solid var(--border);
           display: flex;
           align-items: center;
           justify-content: space-between;
-          padding: 0 12px;
+          padding: 0 11px;
+          box-sizing: border-box;
         }
 
         .title {
           display: flex;
           gap: 6px;
           align-items: center;
-          font-size: 12px;
+          font-size: 11px;
           font-weight: 700;
+          color: var(--text);
+          letter-spacing: -0.02em;
         }
 
         .dots {
@@ -224,65 +228,113 @@ export default function SearchPage() {
         }
 
         .home {
-          height: 226px;
+          height: 185px;
           display: flex;
           flex-direction: column;
           align-items: center;
           justify-content: center;
+          padding-top: 4px;
+          box-sizing: border-box;
         }
 
         .time {
-          font-size: 42px;
+          font-size: 38px;
+          line-height: 1;
           font-weight: 700;
-          margin-bottom: 10px;
+          color: var(--time);
+          margin-bottom: 8px;
+          letter-spacing: -0.04em;
         }
 
         .date {
-          font-size: 13px;
-          letter-spacing: 2px;
-          margin-bottom: 36px;
+          font-size: 12px;
+          letter-spacing: 1.8px;
+          color: var(--muted);
+          font-weight: 600;
+          margin-bottom: 34px;
         }
 
         .searchButton {
-          font-size: 15px;
-          background: transparent;
           border: none;
+          background: transparent;
+          color: var(--text);
+          font-size: 13px;
           cursor: pointer;
+          padding: 0;
         }
 
         .searchPage {
-          height: 226px;
+          height: 185px;
           display: flex;
           flex-direction: column;
         }
 
         .searchHeader {
-          height: 52px;
+          height: 45px;
           border-bottom: 1px solid var(--line);
           display: flex;
           align-items: center;
           gap: 8px;
-          padding: 0 12px;
+          padding: 0 13px;
+          box-sizing: border-box;
+          flex-shrink: 0;
         }
 
         .back {
-          font-size: 22px;
+          width: 18px;
+          min-width: 18px;
           border: none;
           background: transparent;
+          font-size: 21px;
+          color: var(--back);
           cursor: pointer;
+          padding: 0;
+          line-height: 1;
         }
 
         input {
-          width: 240px;
-          height: 34px;
-          border-radius: 7px;
+          width: 176px;
+          height: 31px;
+          border: 1px solid var(--input-border);
+          border-radius: 5px;
           padding: 0 10px;
+          font-size: 12px;
+          color: var(--text);
+          background: var(--input-bg);
+          outline: none;
+          box-sizing: border-box;
+        }
+
+        input::placeholder {
+          color: var(--placeholder);
+        }
+
+        input:focus {
+          border-color: var(--input-border);
+          box-shadow: none;
         }
 
         .resultArea {
           flex: 1;
           overflow-y: auto;
-          padding: 12px;
+          padding: 10px 13px;
+          box-sizing: border-box;
+        }
+
+        .resultArea::-webkit-scrollbar {
+          width: 4px;
+        }
+
+        .resultArea::-webkit-scrollbar-thumb {
+          background: var(--scroll);
+          border-radius: 999px;
+        }
+
+        .message {
+          text-align: center;
+          font-size: 11px;
+          color: var(--text);
+          margin-bottom: 8px;
         }
 
         .empty {
@@ -290,31 +342,56 @@ export default function SearchPage() {
           display: flex;
           align-items: center;
           justify-content: center;
+          text-align: center;
+          font-size: 12px;
+          line-height: 1.8;
+          color: var(--text);
         }
 
         .bookItem {
+          width: 100%;
           display: flex;
-          gap: 10px;
-          margin-bottom: 12px;
+          gap: 9px;
+          align-items: center;
+          margin-bottom: 10px;
+          cursor: pointer;
           border: none;
           background: transparent;
-          cursor: pointer;
+          text-align: left;
+          padding: 0;
         }
 
         .bookItem img,
         .noCover {
-          width: 36px;
-          height: 50px;
-          border-radius: 4px;
+          width: 34px;
+          height: 47px;
+          border-radius: 3px;
+          object-fit: cover;
+          background: var(--no-cover);
+          flex-shrink: 0;
+        }
+
+        .bookInfo {
+          min-width: 0;
+          padding-top: 1px;
         }
 
         .bookTitle {
           font-size: 13px;
           font-weight: 700;
+          color: var(--text);
+          margin-bottom: 4px;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
         }
 
         .author {
           font-size: 11px;
+          color: var(--muted);
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
         }
 
         :global(:root) {
@@ -322,8 +399,35 @@ export default function SearchPage() {
           --topbar: #eeeeee;
           --border: #dedede;
           --line: #eeeeee;
+          --input-bg: #ffffff;
+          --input-border: #e5e5e5;
+          --placeholder: #c8c8c8;
           --text: #777777;
+          --muted: #aaaaaa;
+          --time: #858585;
           --dot: #c7c7c7;
+          --back: #a8a8a8;
+          --no-cover: #eaeaea;
+          --scroll: #d6d6d6;
+        }
+
+        @media (prefers-color-scheme: dark) {
+          :global(:root) {
+            --bg: #191919;
+            --topbar: #2f2f2f;
+            --border: #3a3a3a;
+            --line: #303030;
+            --input-bg: #191919;
+            --input-border: #3a3a3a;
+            --placeholder: #777777;
+            --text: #b8b8b8;
+            --muted: #8e8e8e;
+            --time: #a8a8a8;
+            --dot: #777777;
+            --back: #8e8e8e;
+            --no-cover: #2f2f2f;
+            --scroll: #555555;
+          }
         }
       `}</style>
     </main>
