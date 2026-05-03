@@ -74,7 +74,7 @@ export async function GET(req: NextRequest) {
       books: books.filter((book) => book.title),
     });
   } catch (error) {
-    console.error(error);
+    console.error("RIDI SEARCH ERROR:", error);
     return NextResponse.json({ books: [] }, { status: 500 });
   }
 }

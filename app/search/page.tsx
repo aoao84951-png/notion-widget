@@ -6,6 +6,7 @@ type Book = {
   title: string;
   author: string;
   cover: string;
+  url: string;
 };
 
 export default function SearchPage() {
@@ -13,13 +14,11 @@ export default function SearchPage() {
   const [query, setQuery] = useState("");
   const [books, setBooks] = useState<Book[]>([]);
   const [loading, setLoading] = useState(false);
+  const [saved, setSaved] = useState(false);
   const [now, setNow] = useState(new Date());
 
   useEffect(() => {
-    const timer = setInterval(() => {
-      setNow(new Date());
-    }, 1000);
-
+    const timer = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
 
@@ -37,6 +36,7 @@ export default function SearchPage() {
 
   const handleSearch = async (value: string) => {
     setQuery(value);
+    setSaved(false);
 
     if (!value.trim()) {
       setBooks([]);
@@ -56,12 +56,29 @@ export default function SearchPage() {
     }
   };
 
+  const handleSave = async (book: Book) => {
+    setSaved(false);
+
+    const res = await fetch("/api/ridi-save", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(book),
+    });
+
+    if (res.ok) {
+      setSaved(true);
+      setTimeout(() => setSaved(false), 1800);
+    }
+  };
+
   return (
     <main className="page">
       <div className="widget">
         <div className="topbar">
           <div className="title">
-            <span className="icon">▣</span>
+            <span className="icon">{isSearchMode ? "▣" : "◷"}</span>
             <span>{isSearchMode ? "Lib" : "RIDI SEARCH"}</span>
           </div>
           <div className="dots">
@@ -83,7 +100,15 @@ export default function SearchPage() {
         ) : (
           <section className="searchPage">
             <div className="searchHeader">
-              <button className="back" onClick={() => setIsSearchMode(false)}>
+              <button
+                className="back"
+                onClick={() => {
+                  setIsSearchMode(false);
+                  setQuery("");
+                  setBooks([]);
+                  setSaved(false);
+                }}
+              >
                 ←
               </button>
 
@@ -96,6 +121,8 @@ export default function SearchPage() {
             </div>
 
             <div className="resultArea">
+              {saved && <div className="saved">✓ Saved!</div>}
+
               {!query && (
                 <div className="empty">
                   <div className="cloud">☁️</div>
@@ -111,14 +138,16 @@ export default function SearchPage() {
               )}
 
               {query && !loading && books.length === 0 && (
-                <div className="empty">
-                  <div>검색 결과 없음</div>
-                </div>
+                <div className="empty">검색 결과 없음</div>
               )}
 
               {!loading &&
                 books.map((book, index) => (
-                  <div className="bookItem" key={`${book.title}-${index}`}>
+                  <button
+                    className="bookItem"
+                    key={`${book.title}-${index}`}
+                    onClick={() => handleSave(book)}
+                  >
                     {book.cover ? (
                       <img src={book.cover} alt={book.title} />
                     ) : (
@@ -129,7 +158,7 @@ export default function SearchPage() {
                       <div className="bookTitle">{book.title}</div>
                       <div className="author">{book.author}</div>
                     </div>
-                  </div>
+                  </button>
                 ))}
             </div>
           </section>
@@ -137,18 +166,26 @@ export default function SearchPage() {
       </div>
 
       <style jsx>{`
+        html,
+        body {
+          margin: 0;
+          padding: 0;
+          overflow: hidden;
+        }
+
         .page {
           width: 100vw;
           height: 100vh;
           display: flex;
           align-items: center;
           justify-content: center;
-          background: #ffffff;
+          background: transparent;
+          overflow: hidden;
         }
 
         .widget {
-          width: 400px;
-          height: 360px;
+          width: min(400px, calc(100vw - 8px));
+          height: min(360px, calc(100vh - 8px));
           border: 1px solid #dedede;
           border-radius: 20px;
           overflow: hidden;
@@ -191,7 +228,7 @@ export default function SearchPage() {
         }
 
         .home {
-          height: 310px;
+          height: calc(100% - 50px);
           display: flex;
           flex-direction: column;
           align-items: center;
@@ -199,7 +236,7 @@ export default function SearchPage() {
         }
 
         .time {
-          font-size: 66px;
+          font-size: clamp(48px, 13vw, 66px);
           line-height: 1;
           font-weight: 700;
           color: #858585;
@@ -207,11 +244,11 @@ export default function SearchPage() {
         }
 
         .date {
-          font-size: 20px;
+          font-size: clamp(16px, 4vw, 20px);
           letter-spacing: 3px;
           color: #aaa;
           font-weight: 600;
-          margin-bottom: 60px;
+          margin-bottom: 55px;
         }
 
         .searchButton {
@@ -226,7 +263,7 @@ export default function SearchPage() {
         }
 
         .searchPage {
-          height: 310px;
+          height: calc(100% - 50px);
           display: flex;
           flex-direction: column;
         }
@@ -236,22 +273,26 @@ export default function SearchPage() {
           border-bottom: 1px solid #eeeeee;
           display: flex;
           align-items: center;
-          gap: 14px;
-          padding: 0 24px;
+          gap: 12px;
+          padding: 0 18px;
           box-sizing: border-box;
+          flex-shrink: 0;
         }
 
         .back {
+          width: 34px;
+          min-width: 34px;
           border: none;
           background: transparent;
           font-size: 34px;
           color: #b4b4b4;
           cursor: pointer;
           line-height: 1;
+          padding: 0;
         }
 
         input {
-          width: 270px;
+          width: 100%;
           height: 50px;
           border: 1px solid #e5e5e5;
           border-radius: 8px;
@@ -260,6 +301,7 @@ export default function SearchPage() {
           color: #777;
           outline: none;
           box-sizing: border-box;
+          min-width: 0;
         }
 
         input::placeholder {
@@ -269,8 +311,15 @@ export default function SearchPage() {
         .resultArea {
           flex: 1;
           overflow-y: auto;
-          padding: 18px 28px;
+          padding: 18px 24px;
           box-sizing: border-box;
+        }
+
+        .saved {
+          text-align: center;
+          font-size: 18px;
+          color: #777;
+          margin: 4px 0 18px;
         }
 
         .empty {
@@ -285,11 +334,16 @@ export default function SearchPage() {
         }
 
         .bookItem {
+          width: 100%;
           display: flex;
           gap: 14px;
           align-items: center;
           margin-bottom: 18px;
           cursor: pointer;
+          border: none;
+          background: transparent;
+          text-align: left;
+          padding: 0;
         }
 
         .bookItem img,
@@ -302,16 +356,26 @@ export default function SearchPage() {
           flex-shrink: 0;
         }
 
+        .bookInfo {
+          min-width: 0;
+        }
+
         .bookTitle {
           font-size: 18px;
           font-weight: 700;
           color: #777;
           margin-bottom: 6px;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
         }
 
         .author {
           font-size: 15px;
           color: #999;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
         }
       `}</style>
     </main>
