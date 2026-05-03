@@ -9,6 +9,51 @@ type Book = {
   url: string;
 };
 
+function ClockIcon() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <circle cx="12" cy="12" r="8.2" stroke="currentColor" strokeWidth="2" />
+      <path
+        d="M12 7.4V12L15.1 14"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function SearchIcon() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <g transform="translate(0 2.5)">
+        <circle cx="10.5" cy="10.5" r="6.1" stroke="currentColor" strokeWidth="2.3" />
+        <path
+          d="M15.2 15.2L19.3 19.3"
+          stroke="currentColor"
+          strokeWidth="2.3"
+          strokeLinecap="round"
+        />
+      </g>
+    </svg>
+  );
+}
+
+function BookIcon() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path
+        d="M6 4.5H17.5C18.3 4.5 19 5.2 19 6V20.5H7.2C6.1 20.5 5 19.7 5 18.4V6.2C5 5.3 5.5 4.5 6 4.5Z"
+        stroke="currentColor"
+        strokeWidth="1.9"
+        strokeLinejoin="round"
+      />
+      <path d="M7.2 17.5H19" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 export default function SearchPage() {
   const [isSearchMode, setIsSearchMode] = useState(false);
   const [query, setQuery] = useState("");
@@ -28,11 +73,13 @@ export default function SearchPage() {
     hour12: false,
   });
 
-  const dateText = now.toLocaleDateString("en-US", {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-  }).toUpperCase();
+  const dateText = now
+    .toLocaleDateString("en-US", {
+      weekday: "short",
+      month: "short",
+      day: "numeric",
+    })
+    .toUpperCase();
 
   const handleSearch = async (value: string) => {
     setQuery(value);
@@ -85,9 +132,10 @@ export default function SearchPage() {
       <div className="widget">
         <div className="topbar">
           <div className="title">
-            <span>{isSearchMode ? "▣" : "◷"}</span>
-            <span>{isSearchMode ? "Lib" : "RIDI SEARCH"}</span>
+            {isSearchMode ? <BookIcon /> : <ClockIcon />}
+            <span>{isSearchMode ? "Search" : "SOMLUTION"}</span>
           </div>
+
           <div className="dots">
             <span />
             <span />
@@ -99,8 +147,13 @@ export default function SearchPage() {
             <div className="time">{timeText}</div>
             <div className="date">{dateText}</div>
 
-            <button className="searchButton" onClick={() => setIsSearchMode(true)}>
-              ⌕ search
+            <button
+              className="searchButton"
+              onClick={() => setIsSearchMode(true)}
+              aria-label="Click to search books"
+            >
+              <SearchIcon />
+              <span>search</span>
             </button>
           </section>
         ) : (
@@ -114,6 +167,7 @@ export default function SearchPage() {
                   setBooks([]);
                   setMessage("");
                 }}
+                aria-label="back"
               >
                 ←
               </button>
@@ -129,8 +183,15 @@ export default function SearchPage() {
             <div className="resultArea">
               {message && <div className="message">{message}</div>}
 
-              {!query && !message && <div className="empty">☁️<br />Search...</div>}
+              {!query && !message && (
+                <div className="empty">
+                  <div className="cloud">☁️</div>
+                  <div>Search...</div>
+                </div>
+              )}
+
               {query && loading && <div className="empty">Searching...</div>}
+
               {query && !loading && books.length === 0 && (
                 <div className="empty">검색 결과 없음</div>
               )}
@@ -189,7 +250,7 @@ export default function SearchPage() {
           overflow: hidden;
           background: var(--bg);
           color: var(--text);
-          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+          font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
           box-shadow: 0 8px 22px rgba(0, 0, 0, 0.04);
           box-sizing: border-box;
         }
@@ -213,6 +274,12 @@ export default function SearchPage() {
           font-weight: 700;
           color: var(--text);
           letter-spacing: -0.02em;
+          white-space: nowrap;
+        }
+
+        .title svg {
+          flex-shrink: 0;
+          color: var(--text);
         }
 
         .dots {
@@ -240,18 +307,20 @@ export default function SearchPage() {
         .time {
           font-size: 38px;
           line-height: 1;
-          font-weight: 700;
+          font-weight: 600;
           color: var(--time);
           margin-bottom: 8px;
-          letter-spacing: -0.04em;
+          letter-spacing: -0.055em;
+          font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", sans-serif;
         }
 
         .date {
           font-size: 12px;
-          letter-spacing: 1.8px;
+          letter-spacing: 1.9px;
           color: var(--muted);
           font-weight: 600;
           margin-bottom: 34px;
+          font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
         }
 
         .searchButton {
@@ -259,8 +328,32 @@ export default function SearchPage() {
           background: transparent;
           color: var(--text);
           font-size: 13px;
+          font-weight: 400;
           cursor: pointer;
-          padding: 0;
+          padding: 7px 11px;
+          border-radius: 7px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 7px;
+          line-height: 1;
+          font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
+        }
+
+        .searchButton svg {
+          width: 13px;
+          height: 13px;
+          display: block;   /* ⭐ 핵심 */
+        }
+
+        .searchButton span {
+          display: block;   /* ⭐ 같이 맞춰줘야 완벽 */
+        }
+
+        .searchButton:hover,
+        .searchButton:focus-visible {
+          background: #f0f0f0;
+          outline: none;
         }
 
         .searchPage {
@@ -274,7 +367,7 @@ export default function SearchPage() {
           border-bottom: 1px solid var(--line);
           display: flex;
           align-items: center;
-          gap: 8px;
+          gap: 12px;
           padding: 0 13px;
           box-sizing: border-box;
           flex-shrink: 0;
@@ -285,11 +378,12 @@ export default function SearchPage() {
           min-width: 18px;
           border: none;
           background: transparent;
-          font-size: 21px;
+          font-size: 24px;
           color: var(--back);
           cursor: pointer;
           padding: 0;
           line-height: 1;
+          transform: translateY(-1px);
         }
 
         input {
@@ -303,6 +397,7 @@ export default function SearchPage() {
           background: var(--input-bg);
           outline: none;
           box-sizing: border-box;
+          font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
         }
 
         input::placeholder {
@@ -340,12 +435,20 @@ export default function SearchPage() {
         .empty {
           height: 100%;
           display: flex;
+          flex-direction: column;
           align-items: center;
           justify-content: center;
           text-align: center;
           font-size: 12px;
-          line-height: 1.8;
           color: var(--text);
+          gap: 6px;
+          font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
+        }
+
+        .cloud {
+          font-size: 16px;
+          line-height: 1;
+          opacity: 0.9;
         }
 
         .bookItem {
