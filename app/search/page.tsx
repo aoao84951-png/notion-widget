@@ -133,7 +133,7 @@ export default function SearchPage() {
         <div className="topbar">
           <div className="title">
             {isSearchMode ? <BookIcon /> : <ClockIcon />}
-            <span>{isSearchMode ? "Search" : "SOMLUTION"}</span>
+            <span>{isSearchMode ? "Search" : "RIDI SEARCH"}</span>
           </div>
 
           <div className="dots">
