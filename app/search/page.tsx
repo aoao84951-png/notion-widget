@@ -261,10 +261,10 @@ export default function SearchPage() {
         }
 
         .widget {
-          width: 240px;
-          height: 216px;
+          width: 200px;
+          height: 180px;
           border: 1px solid var(--border);
-          border-radius: 13px;
+          border-radius: 12px;
           overflow: hidden;
           background: var(--bg);
           color: var(--text);
@@ -274,21 +274,21 @@ export default function SearchPage() {
         }
 
         .topbar {
-          height: 31px;
+          height: 26px;
           background: var(--topbar);
           border-bottom: 1px solid var(--border);
           display: flex;
           align-items: center;
           justify-content: space-between;
-          padding: 0 11px;
+          padding: 0 10px;
           box-sizing: border-box;
         }
 
         .title {
           display: flex;
-          gap: 6px;
+          gap: 5px;
           align-items: center;
-          font-size: 11px;
+          font-size: 9px;
           font-weight: 700;
           color: var(--text);
           letter-spacing: -0.02em;
@@ -296,48 +296,50 @@ export default function SearchPage() {
         }
 
         .title svg {
+          width: 12px;
+          height: 12px;
           flex-shrink: 0;
           color: var(--text);
         }
 
         .dots {
           display: flex;
-          gap: 6px;
+          gap: 5px;
         }
 
         .dots span {
-          width: 8px;
-          height: 8px;
+          width: 7px;
+          height: 7px;
           border-radius: 50%;
           background: var(--dot);
         }
 
         .home {
-          height: 185px;
+          height: 154px;
           display: flex;
           flex-direction: column;
           align-items: center;
           justify-content: center;
-          padding-top: 4px;
+          padding-top: 0px;
           box-sizing: border-box;
         }
 
         .time {
-          font-size: 38px;
+          font-size: 34px;
           line-height: 1;
           font-weight: 600;
           color: var(--time);
-          margin-bottom: 8px;
+          margin-bottom: 7px;
           letter-spacing: -0.055em;
           font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", sans-serif;
         }
 
         .date {
-          font-size: 12px;
-          letter-spacing: 1.9px;
+          font-size: 11px;
+          letter-spacing: 1.7px;
           color: var(--muted);
           font-weight: 600;
-          margin-bottom: 34px;
+          margin-bottom: 35px;
           font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
         }
 
@@ -345,22 +347,22 @@ export default function SearchPage() {
           border: none;
           background: transparent;
           color: var(--text);
-          font-size: 13px;
+          font-size: 11px;
           font-weight: 400;
           cursor: pointer;
-          padding: 7px 11px;
+          padding: 6px 10px;
           border-radius: 7px;
           display: inline-flex;
           align-items: center;
           justify-content: center;
-          gap: 7px;
+          gap: 6px;
           line-height: 1;
           font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
         }
 
         .searchButton svg {
-          width: 13px;
-          height: 13px;
+          width: 12px;
+          height: 12px;
           display: block;
         }
 
@@ -375,18 +377,18 @@ export default function SearchPage() {
         }
 
         .searchPage {
-          height: 185px;
+          height: 154px;
           display: flex;
           flex-direction: column;
         }
 
         .searchHeader {
-          height: 45px;
+          height: 38px;
           border-bottom: 1px solid var(--line);
           display: flex;
           align-items: center;
-          gap: 12px;
-          padding: 0 13px;
+          gap: 10px;
+          padding: 0 11px;
           box-sizing: border-box;
           flex-shrink: 0;
         }
@@ -405,12 +407,12 @@ export default function SearchPage() {
         }
 
         input {
-          width: 176px;
-          height: 31px;
+          flex: 1;
+          height: 27px;
           border: 1px solid var(--input-border);
           border-radius: 5px;
           padding: 0 10px;
-          font-size: 12px;
+          font-size: 11px;
           color: var(--text);
           background: var(--input-bg);
           outline: none;
@@ -430,7 +432,7 @@ export default function SearchPage() {
         .resultArea {
           flex: 1;
           overflow-y: auto;
-          padding: 10px 13px;
+          padding: 9px 11px;
           box-sizing: border-box;
         }
 
