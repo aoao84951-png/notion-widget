@@ -432,7 +432,7 @@ export default function SearchPage() {
         .resultArea {
           flex: 1;
           overflow-y: auto;
-          padding: 9px 11px;
+          padding: 8px 10px;
           box-sizing: border-box;
         }
 
@@ -474,9 +474,9 @@ export default function SearchPage() {
         .bookItem {
           width: 100%;
           display: flex;
-          gap: 9px;
+          gap: 7px;
           align-items: center;
-          margin-bottom: 10px;
+          margin-bottom: 8px;
           cursor: pointer;
           border: none;
           background: transparent;
@@ -486,8 +486,8 @@ export default function SearchPage() {
 
         .bookItem img,
         .noCover {
-          width: 34px;
-          height: 47px;
+          width: 26px;
+          height: 36px;
           border-radius: 3px;
           object-fit: cover;
           background: var(--no-cover);
@@ -496,21 +496,21 @@ export default function SearchPage() {
 
         .bookInfo {
           min-width: 0;
-          padding-top: 1px;
+          padding-top: 0;
         }
 
         .bookTitle {
-          font-size: 13px;
+          font-size: 11px;
           font-weight: 700;
           color: var(--text);
-          margin-bottom: 4px;
+          margin-bottom: 2px;
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
         }
 
         .author {
-          font-size: 11px;
+          font-size: 10px;
           color: var(--muted);
           white-space: nowrap;
           overflow: hidden;
