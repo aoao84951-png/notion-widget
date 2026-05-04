@@ -81,11 +81,12 @@ export default function SearchPage() {
     })
     .toUpperCase();
 
-  const handleSearch = async (value: string) => {
-    setQuery(value);
+  const handleSearch = async () => {
     setMessage("");
 
-    if (!value.trim()) {
+    const keyword = query.trim();
+
+    if (!keyword) {
       setBooks([]);
       return;
     }
@@ -93,7 +94,7 @@ export default function SearchPage() {
     setLoading(true);
 
     try {
-      const res = await fetch(`/api/ridi-search?q=${encodeURIComponent(value)}`);
+      const res = await fetch(`/api/ridi-search?q=${encodeURIComponent(keyword)}`);
       const data = await res.json();
       setBooks(data.books || []);
     } catch {
@@ -174,7 +175,19 @@ export default function SearchPage() {
 
               <input
                 value={query}
-                onChange={(e) => handleSearch(e.target.value)}
+                onChange={(e) => {
+                  setQuery(e.target.value);
+
+                  if (!e.target.value.trim()) {
+                    setBooks([]); // 입력값 없으면 결과 초기화
+                  }
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    handleSearch(); // 🔥 Enter 때만 검색
+                  }
+                }}
                 placeholder="Search..."
                 autoFocus
               />
