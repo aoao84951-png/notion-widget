@@ -9,6 +9,7 @@ type Book = {
   url: string;
   totalCount?: string;
   bookType?: string;
+  category?: string;
 };
 
 function ClockIcon() {
@@ -62,6 +63,8 @@ export default function SearchPage() {
   const [books, setBooks] = useState<Book[]>([]);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
+  const [savingKey, setSavingKey] = useState("");
+  const [savedKey, setSavedKey] = useState("");
   const [now, setNow] = useState(new Date());
 
   useEffect(() => {
@@ -106,25 +109,30 @@ export default function SearchPage() {
     }
   };
 
-  const handleSave = async (book: Book) => {
-    setMessage("Saving...");
-
+  const handleSave = async (book: Book, key: string) => {
+    setSavingKey(key);
+    setSavedKey("");
+    setMessage("");
+  
     try {
       const res = await fetch("/api/ridi-save", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(book),
       });
-
+  
       const data = await res.json();
-
+  
       if (!res.ok) {
         setMessage(data.error || "저장 실패");
+        setSavingKey("");
         return;
       }
-
-      setMessage("✓ Saved!");
+  
+      setSavingKey("");
+      setSavedKey(key);
     } catch {
+      setSavingKey("");
       setMessage("저장 실패");
     }
   };
@@ -168,6 +176,8 @@ export default function SearchPage() {
                   setQuery("");
                   setBooks([]);
                   setMessage("");
+                  setSavingKey("");
+                  setSavedKey("");
                 }}
                 aria-label="back"
               >
@@ -180,8 +190,10 @@ export default function SearchPage() {
                   setQuery(e.target.value);
 
                   if (!e.target.value.trim()) {
-                    setBooks([]); // 입력값 없으면 결과 초기화
+                    setBooks([]);
                     setMessage("");
+                    setSavingKey("");
+                    setSavedKey("");
                   }
                 }}
                 onKeyDown={(e) => {
@@ -212,27 +224,39 @@ export default function SearchPage() {
               )}
 
               {!loading &&
-                books.map((book, index) => (
-                  <button
-                    className="bookItem"
-                    key={`${book.title}-${index}`}
-                    onClick={() => handleSave(book)}
-                  >
-                    {book.cover ? (
-                      <img src={book.cover} alt={book.title} />
-                    ) : (
-                      <div className="noCover" />
-                    )}
-
-                    <div className="bookInfo">
-                      <div className="bookTitle">
-                        <span className="bookTitleText">{book.title}</span>
-                        {book.bookType && <span className="bookType">{book.bookType}</span>}
-                      </div>
-                      <div className="author">{book.author}</div>
-                    </div>
-                  </button>
-                ))}
+                books.map((book, index) => {
+                  const bookKey = `${book.title}-${index}`;
+              
+                  return (
+                    <button
+                      className={`bookItem ${savedKey === bookKey || savingKey === bookKey ? "isSaved" : ""}`}
+                      key={bookKey}
+                      onClick={() => handleSave(book, bookKey)}
+                    >
+                      {savedKey === bookKey || savingKey === bookKey ? (
+                        <div className="saveStatus">
+                          {savingKey === bookKey ? "Saving..." : "✓ Saved!"}
+                        </div>
+                      ) : (
+                        <>
+                          {book.cover ? (
+                            <img src={book.cover} alt={book.title} />
+                          ) : (
+                            <div className="noCover" />
+                          )}
+              
+                          <div className="bookInfo">
+                            <div className="bookTitle">
+                              <span className="bookTitleText">{book.title}</span>
+                              {book.bookType && <span className="bookType">{book.bookType}</span>}
+                            </div>
+                            <div className="author">{book.author}</div>
+                          </div>
+                        </>
+                      )}
+                    </button>
+                  );
+                })}
             </div>
           </section>
         )}
@@ -532,6 +556,29 @@ export default function SearchPage() {
           flex-shrink: 0;
         }
 
+        .bookItem.isSaved {
+          width: 100%;
+          height: 42px;
+          padding: 0;
+          border-radius: 8px;
+          background: #f3f3f3;
+          justify-content: center;
+          align-items: center;
+          margin-bottom: 6px;
+        }
+
+        .saveStatus {
+          width: 100%;
+          height: 100%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 11px;
+          font-weight: 600;
+          color: var(--text);
+          gap: 3px
+        }
+        
         .bookInfo {
           min-width: 0;
           padding-top: 0;

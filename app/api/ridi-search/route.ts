@@ -9,11 +9,28 @@ type Book = {
   url: string;
   totalCount?: string;
   bookType?: string;
+  category?: string;
 };
 
 function makeCoverUrl(id: string) {
   if (!id) return "";
   return `https://img.ridicdn.net/cover/${id}/xxlarge?dpi=xxhdpi`;
+}
+
+function classifyCategory(item: any) {
+  const text = [
+    item.parent_category_name,
+    item.parent_category_name2,
+    item.category_name,
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  if (/BL|비엘/i.test(text)) return "BL";
+  if (/로맨스판타지|로판/i.test(text)) return "RO-FAN";
+  if (/로맨스/i.test(text)) return "ROMANCE";
+
+  return "LITERATURE";
 }
 
 export async function GET(req: NextRequest) {
@@ -59,6 +76,7 @@ export async function GET(req: NextRequest) {
 
       return {
         title: item.title || item.web_title || "",
+        category: classifyCategory(item),
         author: item.author || item.author2 || "",
         cover:
           item.cover ||

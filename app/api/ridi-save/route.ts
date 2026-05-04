@@ -7,6 +7,13 @@ import {
 } from "@notionhq/client";
 import { NextRequest, NextResponse } from "next/server";
 
+const CATEGORY_MAP: Record<string, string> = {
+  BL: "cc3e828b-7ef9-4040-9962-4232c1dd67fb",
+  ROMANCE: "b28b015a-b4c7-4a3d-b703-65d9aa70bcf4",
+  "RO-FAN": "eb0f94ec-67b8-424a-9476-19a7b83b8128",
+  LITERATURE: "3483acdc-d825-809b-bf1b-ca2acbdc9c7e",
+};
+
 function sanitizeEnvDatabaseId(raw: string | undefined): string | null {
   if (!raw) return null;
 
@@ -124,7 +131,7 @@ export async function POST(req: NextRequest) {
   const notion = new Client({ auth: notionToken });
 
   try {
-    const { title, author, cover, totalCount } = await req.json();
+    const { title, author, cover, totalCount, category } = await req.json();
 
     if (!title) {
       return NextResponse.json({ error: "제목 없음" }, { status: 400 });
@@ -180,6 +187,12 @@ export async function POST(req: NextRequest) {
         },
         총권수: {
           number: totalCount ? Number(totalCount) : null,  
+        },
+        카테고리: {
+          relation:        
+            category && CATEGORY_MAP[category]       
+              ? [{ id: CATEGORY_MAP[category] }]       
+              : [],       
         },
         cover: {
           files: coverFiles,
