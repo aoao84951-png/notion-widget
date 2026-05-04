@@ -241,6 +241,8 @@ export default function SearchPage() {
           padding: 0;
           overflow: hidden;
           background: #ffffff;
+          -webkit-text-size-adjust: 100%;
+          text-size-adjust: 100%;
         }
 
         @media (prefers-color-scheme: dark) {
@@ -410,10 +412,11 @@ export default function SearchPage() {
           border-bottom: 1px solid var(--line);
           display: flex;
           align-items: center;
-          gap: 10px;
-          padding: 0 11px;
+          gap: 8px;
+          padding: 0 10px;
           box-sizing: border-box;
           flex-shrink: 0;
+          overflow: hidden;
         }
 
         .back {
@@ -431,16 +434,23 @@ export default function SearchPage() {
 
         input {
           flex: 1;
+          min-width: 0;
+          width: 100%;
           height: 27px;
           border: 1px solid var(--input-border);
           border-radius: 5px;
-          padding: 0 10px;
+          padding: 0 9px;
           font-size: 11px;
+          line-height: 27px;
           color: var(--text);
           background: var(--input-bg);
           outline: none;
           box-sizing: border-box;
           font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
+          appearance: none;
+          -webkit-appearance: none;
+          -webkit-text-size-adjust: 100%;
+          text-size-adjust: 100%;
         }
 
         input::placeholder {
