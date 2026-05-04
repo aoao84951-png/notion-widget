@@ -122,7 +122,6 @@ export default function SearchPage() {
       }
 
       setMessage("✓ Saved!");
-      setTimeout(() => setMessage(""), 1600);
     } catch {
       setMessage("저장 실패");
     }
@@ -180,6 +179,7 @@ export default function SearchPage() {
 
                   if (!e.target.value.trim()) {
                     setBooks([]); // 입력값 없으면 결과 초기화
+                    setMessage("");
                   }
                 }}
                 onKeyDown={(e) => {
@@ -234,6 +234,7 @@ export default function SearchPage() {
       </div>
 
       <style jsx global>{`
+        @import url('https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&display=swap');
         html,
         body {
           margin: 0;
@@ -329,34 +330,43 @@ export default function SearchPage() {
 
         .home {
           height: 154px;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          padding-top: 0px;
+          position: relative;
           box-sizing: border-box;
         }
 
         .time {
+          position: absolute;
+          top: 22px;
+          left: 50%;
+          transform: translateX(-50%);
           font-size: 34px;
           line-height: 1;
-          font-weight: 600;
+          font-weight: 500;
           color: var(--time);
-          margin-bottom: 7px;
-          letter-spacing: -0.055em;
-          font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", sans-serif;
+          letter-spacing: -0.02em;
+          font-family: 'Hanken Grotesk', sans-serif;
+          font-variant-numeric: tabular-nums; 
+          font-feature-settings: "tnum"; 
         }
 
         .date {
+          position: absolute;
+          top: 58px;
+          left: 50%;
+          transform: translateX(-50%);
           font-size: 11px;
-          letter-spacing: 1.7px;
+          letter-spacing: 1.2px;
           color: var(--muted);
-          font-weight: 600;
-          margin-bottom: 35px;
-          font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
+          font-weight: 500;
+          white-space: nowrap;
+          font-family: 'Hanken Grotesk', sans-serif;
         }
 
         .searchButton {
+          position: absolute;
+          top: 92px;
+          left: 50%;
+          transform: translateX(-50%);
           border: none;
           background: transparent;
           color: var(--text);

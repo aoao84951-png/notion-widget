@@ -30,10 +30,7 @@ function sanitizeIntegrationToken(raw: string | undefined): string | null {
   return token || null;
 }
 
-async function resolveDataSourceId(
-  notion: Client,
-  rawId: string
-): Promise<string> {
+async function resolveDataSourceId(notion: Client, rawId: string): Promise<string> {
   try {
     await notion.dataSources.query({
       data_source_id: rawId,
@@ -44,9 +41,7 @@ async function resolveDataSourceId(
   } catch (error) {
     if (
       !APIResponseError.isAPIResponseError(error) ||
-      !["object_not_found", "validation_error", "invalid_request_url"].includes(
-        error.code
-      )
+      !["object_not_found", "validation_error", "invalid_request_url"].includes(error.code)
     ) {
       throw error;
     }
@@ -64,6 +59,55 @@ async function resolveDataSourceId(
   }
 
   return firstDataSourceId;
+}
+
+async function uploadExternalImageToNotion(token: string, imageUrl: string, filename: string) {
+  const createRes = await fetch("https://api.notion.com/v1/file_uploads", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+      "Notion-Version": "2026-03-11",
+    },
+    body: JSON.stringify({
+      mode: "external_url",
+      external_url: imageUrl,
+      filename,
+    }),
+  });
+
+  const fileUpload = await createRes.json();
+
+  if (!createRes.ok) {
+    throw new Error(fileUpload.message || "Notion 파일 업로드 생성 실패");
+  }
+
+  for (let i = 0; i < 10; i++) {
+    const checkRes = await fetch(`https://api.notion.com/v1/file_uploads/${fileUpload.id}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Notion-Version": "2026-03-11",
+      },
+    });
+
+    const checked = await checkRes.json();
+
+    if (!checkRes.ok) {
+      throw new Error(checked.message || "Notion 파일 업로드 확인 실패");
+    }
+
+    if (checked.status === "uploaded") {
+      return checked.id;
+    }
+
+    if (checked.status === "failed" || checked.status === "expired") {
+      throw new Error("Notion 파일 업로드 실패");
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 700));
+  }
+
+  throw new Error("Notion 파일 업로드 대기 시간 초과");
 }
 
 export async function POST(req: NextRequest) {
@@ -87,6 +131,27 @@ export async function POST(req: NextRequest) {
     }
 
     const resolvedDataSourceId = await resolveDataSourceId(notion, databaseId);
+
+    let coverFiles: any[] = [];
+
+    if (cover) {
+      const safeTitle = String(title).replace(/[\\/:*?"<>|]/g, "").slice(0, 50);
+      const fileUploadId = await uploadExternalImageToNotion(
+        notionToken,
+        cover,
+        `${safeTitle || "cover"}.jpg`
+      );
+
+      coverFiles = [
+        {
+          name: `${safeTitle || "cover"}.jpg`,
+          type: "file_upload",
+          file_upload: {
+            id: fileUploadId,
+          },
+        },
+      ];
+    }
 
     const created = await notion.pages.create({
       parent: {
@@ -114,17 +179,7 @@ export async function POST(req: NextRequest) {
           ],
         },
         cover: {
-          files: cover
-            ? [
-                {
-                  name: "cover",
-                  type: "external",
-                  external: {
-                    url: cover,
-                  },
-                },
-              ]
-            : [],
+          files: coverFiles,
         },
       },
     });
@@ -151,8 +206,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const message =
-      error instanceof Error ? error.message : "저장 실패";
+    const message = error instanceof Error ? error.message : "저장 실패";
 
     return NextResponse.json({ error: message }, { status: 500 });
   }
