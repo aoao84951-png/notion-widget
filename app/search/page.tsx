@@ -7,6 +7,8 @@ type Book = {
   author: string;
   cover: string;
   url: string;
+  totalCount?: string;
+  bookType?: string;
 };
 
 function ClockIcon() {
@@ -223,7 +225,10 @@ export default function SearchPage() {
                     )}
 
                     <div className="bookInfo">
-                      <div className="bookTitle">{book.title}</div>
+                      <div className="bookTitle">
+                        <span className="bookTitleText">{book.title}</span>
+                        {book.bookType && <span className="bookType">{book.bookType}</span>}
+                      </div>
                       <div className="author">{book.author}</div>
                     </div>
                   </button>
@@ -533,13 +538,35 @@ export default function SearchPage() {
         }
 
         .bookTitle {
+          display: flex;
+          align-items: center;
+          gap: 4px;
           font-size: 11px;
           font-weight: 700;
           color: var(--text);
           margin-bottom: 2px;
+          min-width: 0;
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
+        }
+
+        .bookTitleText {
+          min-width: 0;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        .bookType {
+          flex-shrink: 0;
+          font-size: 8px;
+          font-weight: 700;
+          line-height: 1;
+          padding: 3px 4px;
+          border-radius: 999px;
+          background: #eeeeee;
+          color: #777777;
         }
 
         .author {

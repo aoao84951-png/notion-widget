@@ -7,6 +7,8 @@ type Book = {
   author: string;
   cover: string;
   url: string;
+  totalCount?: string;
+  bookType?: string;
 };
 
 function makeCoverUrl(id: string) {
@@ -67,6 +69,15 @@ export async function GET(req: NextRequest) {
           item.image_url ||
           makeCoverUrl(id),
         url: id ? `https://ridibooks.com/books/${id}` : "",
+        totalCount: String(
+          item.series_prices_info?.[0]?.book_count ||
+            item.total_count ||
+            item.book_count ||
+            item.series_count ||
+            item.series?.total_count ||
+            ""
+        ),
+        bookType: Number(item.is_serial) === 1 ? "연재" : "이북",
       };
     });
 

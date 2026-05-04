@@ -124,7 +124,7 @@ export async function POST(req: NextRequest) {
   const notion = new Client({ auth: notionToken });
 
   try {
-    const { title, author, cover } = await req.json();
+    const { title, author, cover, totalCount } = await req.json();
 
     if (!title) {
       return NextResponse.json({ error: "제목 없음" }, { status: 400 });
@@ -177,6 +177,9 @@ export async function POST(req: NextRequest) {
               },
             },
           ],
+        },
+        총권수: {
+          number: totalCount ? Number(totalCount) : null,  
         },
         cover: {
           files: coverFiles,
