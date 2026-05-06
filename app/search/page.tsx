@@ -10,6 +10,7 @@ type Book = {
   totalCount?: string;
   bookType?: string;
   category?: string;
+  platform?: string;
 };
 
 function ClockIcon() {
@@ -66,6 +67,8 @@ export default function SearchPage() {
   const [savingKey, setSavingKey] = useState("");
   const [savedKey, setSavedKey] = useState("");
   const [now, setNow] = useState(new Date());
+  const [popupTitle, setPopupTitle] = useState("");
+  const [popupPos, setPopupPos] = useState({ x: 0, y: 0 });
 
   useEffect(() => {
     const timer = setInterval(() => setNow(new Date()), 1000);
@@ -86,32 +89,66 @@ export default function SearchPage() {
     })
     .toUpperCase();
 
-  const handleSearch = async () => {
-    setMessage("");
-
-    const keyword = query.trim();
-
-    if (!keyword) {
-      setBooks([]);
-      return;
-    }
-
-    setLoading(true);
-
-    try {
-      const res = await fetch(`/api/ridi-search?q=${encodeURIComponent(keyword)}`);
-      const data = await res.json();
-      setBooks(data.books || []);
-    } catch {
-      setBooks([]);
-    } finally {
-      setLoading(false);
-    }
-  };
+    const handleSearch = async () => {
+      setMessage("");
+      setSavingKey("");
+      setSavedKey("");
+      setPopupTitle("");
+    
+      const keyword = query.trim();
+    
+      if (!keyword) {
+        setBooks([]);
+        return;
+      }
+    
+      setLoading(true);
+    
+      try {
+        const [ridiRes, kakaoRes, naverRes] = await Promise.all([
+          fetch(`/api/ridi-search?q=${encodeURIComponent(keyword)}`),
+          fetch(`/api/kakao-search?q=${encodeURIComponent(keyword)}`),
+          fetch(`/api/naver-series-search?q=${encodeURIComponent(keyword)}`),
+        ]);
+    
+        const ridiData = await ridiRes.json();
+        const kakaoData = await kakaoRes.json();
+        const naverData = await naverRes.json();
+    
+        const allBooks = [
+          ...(ridiData.books || []),
+          ...(kakaoData.books || []),
+          ...(naverData.books || []),
+        ];
+        
+        const normalizedKeyword = keyword.replace(/\s/g, "").toLowerCase();
+        
+        allBooks.sort((a, b) => {
+          const aTitle = (a.title || "").replace(/\s/g, "").toLowerCase();
+          const bTitle = (b.title || "").replace(/\s/g, "").toLowerCase();
+        
+          const score = (title: string) => {
+            if (title === normalizedKeyword) return 0;
+            if (title.startsWith(normalizedKeyword)) return 1;
+            if (title.includes(normalizedKeyword)) return 2;
+            return 3;
+          };
+        
+          return score(aTitle) - score(bTitle);
+        });
+        
+        setBooks(allBooks);
+      } catch {
+        setBooks([]);
+      } finally {
+        setLoading(false);
+      }
+    };
 
   const handleSave = async (book: Book, key: string) => {
     setSavingKey(key);
     setSavedKey("");
+    setPopupTitle("");
     setMessage("");
   
     try {
@@ -143,7 +180,7 @@ export default function SearchPage() {
         <div className="topbar">
           <div className="title">
             {isSearchMode ? <BookIcon /> : <ClockIcon />}
-            <span>{isSearchMode ? "Search" : "RIDI SEARCH"}</span>
+            <span>{isSearchMode ? "Search" : "LIB SEARCH"}</span>
           </div>
 
           <div className="dots">
@@ -161,7 +198,7 @@ export default function SearchPage() {
               className="searchButton"
               onClick={() => setIsSearchMode(true)}
               aria-label="Click to search books"
-            >
+            > 
               <SearchIcon />
               <span>search</span>
             </button>
@@ -178,6 +215,7 @@ export default function SearchPage() {
                   setMessage("");
                   setSavingKey("");
                   setSavedKey("");
+                  setPopupTitle("");
                 }}
                 aria-label="back"
               >
@@ -194,6 +232,7 @@ export default function SearchPage() {
                     setMessage("");
                     setSavingKey("");
                     setSavedKey("");
+                    setPopupTitle("");
                   }
                 }}
                 onKeyDown={(e) => {
@@ -231,7 +270,20 @@ export default function SearchPage() {
                     <button
                       className={`bookItem ${savedKey === bookKey || savingKey === bookKey ? "isSaved" : ""}`}
                       key={bookKey}
+                      title={book.title}
+                      onMouseEnter={(e) => {
+                        setPopupTitle(book.title);
+                        setPopupPos({ x: e.clientX, y: e.clientY });
+                      }}
+                      onMouseMove={(e) => {
+                        setPopupPos({ x: e.clientX, y: e.clientY });
+                      }}
+                      onMouseLeave={() => setPopupTitle("")}
                       onClick={() => handleSave(book, bookKey)}
+                      onContextMenu={(e) => {
+                        e.preventDefault();
+                        setPopupTitle(book.title);
+                      }}
                     >
                       {savedKey === bookKey || savingKey === bookKey ? (
                         <div className="saveStatus">
@@ -247,8 +299,11 @@ export default function SearchPage() {
               
                           <div className="bookInfo">
                             <div className="bookTitle">
-                              <span className="bookTitleText">{book.title}</span>
+                              <span className="bookTitleText" title={book.title}>
+                                {book.title}
+                              </span>
                               {book.bookType && <span className="bookType">{book.bookType}</span>}
+                              {book.platform && <span className="bookType">{book.platform}</span>}
                             </div>
                             <div className="author">{book.author}</div>
                           </div>
@@ -260,6 +315,17 @@ export default function SearchPage() {
             </div>
           </section>
         )}
+
+        {popupTitle && (
+          <div
+            className="titlePopup"
+            style={{ left: popupPos.x + 10, top: popupPos.y + 10 }}
+            onClick={() => setPopupTitle("")}
+          >
+            {popupTitle}
+          </div>
+        )}
+
       </div>
 
       <style jsx global>{`
@@ -576,7 +642,7 @@ export default function SearchPage() {
           font-size: 11px;
           font-weight: 600;
           color: var(--text);
-          gap: 3px
+          gap: 3px;
         }
         
         .bookInfo {
@@ -622,6 +688,23 @@ export default function SearchPage() {
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
+        }
+
+        .titlePopup {
+          position: fixed;
+          z-index: 9999;
+          max-width: 220px;
+          padding: 7px 9px;
+          border-radius: 8px;
+          background: rgba(245, 245, 245, 0.96);
+          color: var(--text);
+          font-size: 10px;
+          font-weight: 600;
+          line-height: 1.35;
+          text-align: left;
+          box-sizing: border-box;
+          pointer-events: none;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
         }
 
         :global(:root) {
