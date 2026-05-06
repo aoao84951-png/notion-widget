@@ -123,7 +123,17 @@ export default function SearchPage() {
         
         const normalizedKeyword = keyword.replace(/\s/g, "").toLowerCase();
         
-        allBooks.sort((a, b) => {
+        const filteredBooks = allBooks.filter((book) => {
+          const title = (book.title || "").replace(/\s/g, "").toLowerCase();
+        
+          return (
+            title === normalizedKeyword ||
+            title.startsWith(normalizedKeyword) ||
+            title.includes(normalizedKeyword)
+          );
+        });
+        
+        filteredBooks.sort((a, b) => {
           const aTitle = (a.title || "").replace(/\s/g, "").toLowerCase();
           const bTitle = (b.title || "").replace(/\s/g, "").toLowerCase();
         
@@ -137,7 +147,7 @@ export default function SearchPage() {
           return score(aTitle) - score(bTitle);
         });
         
-        setBooks(allBooks);
+        setBooks(filteredBooks);
       } catch {
         setBooks([]);
       } finally {

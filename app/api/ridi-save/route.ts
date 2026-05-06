@@ -14,6 +14,14 @@ const CATEGORY_MAP: Record<string, string> = {
   LITERATURE: "3483acdc-d825-809b-bf1b-ca2acbdc9c7e",
 };
 
+const PLATFORM_MAP: Record<string, string> = {
+  리디: "리디북스",
+  리디북스: "리디북스",
+  카카오페이지: "카카오페이지",
+  네이버시리즈: "네이버시리즈",
+  조아라: "조아라",
+};
+
 function sanitizeEnvDatabaseId(raw: string | undefined): string | null {
   if (!raw) return null;
 
@@ -198,7 +206,7 @@ export async function POST(req: NextRequest) {
   const notion = new Client({ auth: notionToken });
 
   try {
-    const { title, author, cover, totalCount, category } = await req.json();
+    const { title, author, cover, totalCount, category, platform } = await req.json();
 
     if (!title) {
       return NextResponse.json({ error: "제목 없음" }, { status: 400 });
@@ -261,6 +269,13 @@ export async function POST(req: NextRequest) {
             category && CATEGORY_MAP[category]       
               ? [{ id: CATEGORY_MAP[category] }]       
               : [],       
+        },
+        플랫폼: {
+          select: platform
+            ? {
+                name: PLATFORM_MAP[platform] || platform,
+              }
+            : null,
         },
         cover: {
           files: coverFiles,

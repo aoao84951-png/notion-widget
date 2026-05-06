@@ -10,6 +10,7 @@ type Book = {
   totalCount?: string;
   bookType?: string;
   category?: string;
+  platform?: string;
 };
 
 function makeCoverUrl(id: string) {
@@ -78,6 +79,7 @@ export async function GET(req: NextRequest) {
         title: item.title || item.web_title || "",
         category: classifyCategory(item),
         author: item.author || item.author2 || "",
+        platform: "리디",
         cover:
           item.cover ||
           item.cover_url ||
