@@ -270,7 +270,6 @@ export default function SearchPage() {
                     <button
                       className={`bookItem ${savedKey === bookKey || savingKey === bookKey ? "isSaved" : ""}`}
                       key={bookKey}
-                      title={book.title}
                       onMouseEnter={(e) => {
                         setPopupTitle(book.title);
                         setPopupPos({ x: e.clientX, y: e.clientY });
@@ -280,10 +279,6 @@ export default function SearchPage() {
                       }}
                       onMouseLeave={() => setPopupTitle("")}
                       onClick={() => handleSave(book, bookKey)}
-                      onContextMenu={(e) => {
-                        e.preventDefault();
-                        setPopupTitle(book.title);
-                      }}
                     >
                       {savedKey === bookKey || savingKey === bookKey ? (
                         <div className="saveStatus">
@@ -299,9 +294,24 @@ export default function SearchPage() {
               
                           <div className="bookInfo">
                             <div className="bookTitle">
-                              <span className="bookTitleText" title={book.title}>
-                                {book.title}
-                              </span>
+                            <span
+                              className="bookTitleText"
+                              title={book.title}
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                              
+                                const rect = e.currentTarget.getBoundingClientRect();
+                              
+                                setPopupTitle(book.title);
+                                setPopupPos({
+                                  x: rect.left,
+                                  y: rect.bottom,
+                                });
+                              }}
+                            >
+                              {book.title}
+                            </span>
                               {book.bookType && <span className="bookType">{book.bookType}</span>}
                               {book.platform && <span className="bookType">{book.platform}</span>}
                             </div>
@@ -603,6 +613,9 @@ export default function SearchPage() {
           width: 100%;
           display: flex;
           gap: 7px;
+          -webkit-touch-callout: none;
+          -webkit-user-select: none;
+          user-select: none;
           align-items: center;
           margin-bottom: 8px;
           cursor: pointer;
@@ -615,6 +628,9 @@ export default function SearchPage() {
         .bookItem img,
         .noCover {
           width: 26px;
+          -webkit-touch-callout: none;
+          -webkit-user-select: none;
+          user-select: none;
           height: 36px;
           border-radius: 3px;
           object-fit: cover;
@@ -667,6 +683,9 @@ export default function SearchPage() {
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
+          -webkit-touch-callout: none;
+          -webkit-user-select: none;
+          user-select: none;
         }
 
         .bookType {
