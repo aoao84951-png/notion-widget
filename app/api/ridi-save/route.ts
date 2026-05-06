@@ -68,7 +68,74 @@ async function resolveDataSourceId(notion: Client, rawId: string): Promise<strin
   return firstDataSourceId;
 }
 
+async function fetchNaverImage(url: string) {
+  return fetch(url, {
+    headers: {
+      "User-Agent": "Mozilla/5.0",
+      Referer: "https://series.naver.com/",
+      Cookie: process.env.NAVER_SERIES_COOKIE || "",
+    },
+  });
+}
+
 async function uploadExternalImageToNotion(token: string, imageUrl: string, filename: string) {
+  const isNaverImage = imageUrl.includes("comicthumb-phinf.pstatic.net");
+
+  if (isNaverImage) {
+    const imageRes = await fetchNaverImage(imageUrl);
+
+    if (!imageRes.ok) {
+      throw new Error("네이버 이미지 fetch 실패");
+    }
+
+    const imageBuffer = await imageRes.arrayBuffer();
+    const contentType = imageRes.headers.get("content-type") || "image/jpeg";
+
+    const createRes = await fetch("https://api.notion.com/v1/file_uploads", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+        "Notion-Version": "2026-03-11",
+      },
+      body: JSON.stringify({
+        mode: "single_part",
+        filename,
+        content_type: contentType,
+      }),
+    });
+
+    const fileUpload = await createRes.json();
+
+    if (!createRes.ok) {
+      throw new Error(fileUpload.message || "Notion 파일 업로드 생성 실패");
+    }
+
+    const formData = new FormData();
+    formData.append(
+      "file",
+      new Blob([imageBuffer], { type: contentType }),
+      filename
+    );
+
+    const sendRes = await fetch(`https://api.notion.com/v1/file_uploads/${fileUpload.id}/send`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Notion-Version": "2026-03-11",
+      },
+      body: formData,
+    });
+
+    const sent = await sendRes.json();
+
+    if (!sendRes.ok) {
+      throw new Error(sent.message || "Notion 파일 전송 실패");
+    }
+
+    return fileUpload.id;
+  }
+
   const createRes = await fetch("https://api.notion.com/v1/file_uploads", {
     method: "POST",
     headers: {
@@ -143,12 +210,13 @@ export async function POST(req: NextRequest) {
 
     if (cover) {
       const safeTitle = String(title).replace(/[\\/:*?"<>|]/g, "").slice(0, 50);
+    
       const fileUploadId = await uploadExternalImageToNotion(
         notionToken,
         cover,
         `${safeTitle || "cover"}.jpg`
       );
-
+    
       coverFiles = [
         {
           name: `${safeTitle || "cover"}.jpg`,

@@ -17,6 +17,39 @@ function classifyCategory(item: any) {
   return "LITERATURE";
 }
 
+async function getKakaoTotalCount(seriesId: number) {
+  try {
+    const url = `https://bff-page.kakao.com/api/gateway/api/v2/content/product/list?series_id=${seriesId}&cursor_index=0&cursor_direction=ANCHOR&window_size=6`;
+
+    const res = await fetch(url, {
+      headers: {
+        "User-Agent": "Mozilla/5.0",
+        Referer: `https://page.kakao.com/content/${seriesId}`,
+        Accept: "application/json",
+      },
+    });
+
+    const text = await res.text();
+
+    console.log("카카오 상세 API 상태:", {
+      seriesId,
+      status: res.status,
+      text: text.slice(0, 300),
+    });
+
+    const data = JSON.parse(text);
+
+    return (
+      data?.result?.total_count ||
+      data?.result?.series_item?.on_sale_count ||
+      ""
+    );
+  } catch (error) {
+    console.log("카카오 총권수 가져오기 실패:", seriesId, error);
+    return "";
+  }
+}
+
 export async function GET(req: NextRequest) {
   const query = req.nextUrl.searchParams.get("q");
 
@@ -61,16 +94,32 @@ export async function GET(req: NextRequest) {
 
     const rawItems = data?.result?.list || [];
 
-    const books = rawItems.map((item: any) => ({
-      title: item.title || "",
-      author: item.authors || "",
-      cover: makeKakaoCoverUrl(item.thumbnail || ""),
-      url: item.series_id ? `https://page.kakao.com/content/${item.series_id}` : "",
-      totalCount: item.free_slide_count ? String(item.free_slide_count) : "",
-      bookType: item.category || "카카오페이지",
-      category: classifyCategory(item),
-      platform: "카카오페이지",
-    }));
+    console.log(JSON.stringify(rawItems[0], null, 2));
+
+    const books = await Promise.all(
+      rawItems.map(async (item: any) => {
+        const totalCount = item.series_id
+          ? await getKakaoTotalCount(item.series_id)
+          : "";
+
+        console.log("카카오 총권수 확인:", {
+          title: item.title,
+          series_id: item.series_id,
+          totalCount,
+        });
+    
+        return {
+          title: item.title || "",
+          author: item.authors || "",
+          cover: makeKakaoCoverUrl(item.thumbnail || ""),
+          url: item.series_id ? `https://page.kakao.com/content/${item.series_id}` : "",
+          totalCount: totalCount ? String(totalCount) : "",
+          bookType: item.category || "카카오페이지",
+          category: classifyCategory(item),
+          platform: "카카오페이지",
+        };
+      })
+    );
 
     return NextResponse.json({
       books: books.filter((book: any) => book.title),
