@@ -17,9 +17,37 @@ function stripTags(text: string) {
   return decodeHtml(text.replace(/<[^>]*>/g, ""));
 }
 
-function classifyCategory() {
-  return "LITERATURE";
-}
+function classifyNaverGenre(genre: string) {
+    if (genre.includes("BL")) return "BL";
+    if (genre.includes("로판") || genre.includes("로맨스판타지")) return "RO-FAN";
+    if (genre.includes("로맨스")) return "ROMANCE";
+    return "LITERATURE";
+  }
+  
+  async function getNaverDetailCategory(url: string) {
+    try {
+      const res = await fetch(url, {
+        headers: {
+          "User-Agent": "Mozilla/5.0",
+          Cookie: process.env.NAVER_SERIES_COOKIE || "",
+        },
+      });
+  
+      const html = await res.text();
+  
+      const genreMatch = html.match(
+        /<a href="\/(?:novel|comic|ebook)\/categoryProductList\.series\?categoryTypeCode=genre[^"]*">([^<]+)<\/a>/
+      );
+  
+      const genre = genreMatch?.[1]?.trim() || "";
+
+      console.log("네이버 상세 장르:", { url, genre });
+  
+      return classifyNaverGenre(genre);
+    } catch {
+      return "LITERATURE";
+    }
+  }
 
 export async function GET(req: NextRequest) {
   const query = req.nextUrl.searchParams.get("q");
@@ -53,45 +81,52 @@ export async function GET(req: NextRequest) {
 
     const liMatches = [...html.matchAll(/<li>[\s\S]*?<\/li>/g)];
 
-    const books = liMatches
-      .map((match) => {
-        const li = match[0];
-
-        const titleMatch = li.match(
-          /<a[^>]+href="([^"]*detail\.series\?productNo=[^"]+)"[^>]*class="[^"]*title[^"]*"[^>]*>([\s\S]*?)<\/a>/
-        );
-
-        if (!titleMatch) return null;
-
-        const detailPath = decodeHtml(titleMatch[1]);
-        const rawTitle = stripTags(titleMatch[2]);
-
-        const coverMatch = li.match(/<img[^>]+src="([^"]+)"/);
-        const authorMatch = li.match(/<span class="author">([\s\S]*?)<\/span>/);
-        const totalMatch = rawTitle.match(/\(총\s*([0-9]+)\s*(화|권)/);
-
-        const cleanTitle = rawTitle.replace(/\s*\(총\s*[0-9]+(?:화|권)\/[^)]*\)\s*/g, "").trim();
-
-        return {
-          title: cleanTitle,
-          author: authorMatch ? stripTags(authorMatch[1]) : "",
-          cover: coverMatch ? decodeHtml(coverMatch[1]) : "",
-          url: `https://series.naver.com${detailPath}`,
-          totalCount: totalMatch ? totalMatch[1] : "",
-          bookType: li.includes("N=a:com.title")
-            ? rawTitle.includes("화")
-              ? "웹툰"
-              : "만화"
-            : li.includes("N=a:nov.title")
-            ? "웹소설"
-            : li.includes("N=a:book.title")
-            ? "이북"
-            : "네이버시리즈",
-          category: classifyCategory(),
-          platform: "네이버시리즈",
-        };
-      })
-      .filter(Boolean);
+    const books = (
+        await Promise.all(
+          liMatches.map(async (match) => {
+            const li = match[0];
+      
+            const titleMatch = li.match(
+              /<a[^>]+href="([^"]*detail\.series\?productNo=[^"]+)"[^>]*class="[^"]*title[^"]*"[^>]*>([\s\S]*?)<\/a>/
+            );
+      
+            if (!titleMatch) return null;
+      
+            const detailPath = decodeHtml(titleMatch[1]);
+            const rawTitle = stripTags(titleMatch[2]);
+      
+            const coverMatch = li.match(/<img[^>]+src="([^"]+)"/);
+            const authorMatch = li.match(/<span class="author">([\s\S]*?)<\/span>/);
+            const totalMatch = rawTitle.match(/\(총\s*([0-9]+)\s*(화|권)/);
+      
+            const cleanTitle = rawTitle
+              .replace(/\s*\(총\s*[0-9]+(?:화|권)\/[^)]*\)\s*/g, "")
+              .trim();
+      
+            const fullUrl = `https://series.naver.com${detailPath}`;
+            const category = await getNaverDetailCategory(fullUrl);
+      
+            return {
+              title: cleanTitle,
+              author: authorMatch ? stripTags(authorMatch[1]) : "",
+              cover: coverMatch ? decodeHtml(coverMatch[1]) : "",
+              url: fullUrl,
+              totalCount: totalMatch ? totalMatch[1] : "",
+              bookType: li.includes("N=a:com.title")
+                ? rawTitle.includes("화")
+                  ? "웹툰"
+                  : "만화"
+                : li.includes("N=a:nov.title")
+                ? "웹소설"
+                : li.includes("N=a:book.title")
+                ? "이북"
+                : "네이버시리즈",
+              category,
+              platform: "네이버시리즈",
+            };
+          })
+        )
+      ).filter(Boolean);
 
     return NextResponse.json({ books });
   } catch (error) {
