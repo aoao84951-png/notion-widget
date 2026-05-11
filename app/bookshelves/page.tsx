@@ -16,8 +16,6 @@ type BookItem = {
   author: string | null;
   status: string | null;
   platform?: string | null;
-  progressText?: string | null;
-  progress?: number | null;
   category: CategoryItem[];
   categoryRelationIds?: string[];
   categoryRawTexts?: string[];
@@ -29,9 +27,10 @@ type BookItem = {
   rating?: number | null;
 };
 
-const BASE_WIDTH = 560;
-const BASE_HEIGHT = 415;
-const PAGE_SIZE = 7;
+const DESKTOP_WIDTH = 560;
+const MOBILE_WIDTH = 340;
+const BASE_HEIGHT = 455;
+const PAGE_SIZE = 8;
 
 const CATEGORY_TABS = [
   { label: '전체', key: 'ALL' },
@@ -41,18 +40,27 @@ const CATEGORY_TABS = [
   { label: '일반서적', key: 'LITERATURE' },
 ] as const;
 
-const STATUS_STYLE: Record<string, { label: string; color: string; bg: string }> = {
-  책바구니: { label: '읽고 싶어요', color: '#9CA3AF', bg: '#F3F4F6' },
-  '읽기 전': { label: '읽기 전', color: '#22C55E', bg: '#ECFDF3' },
-  '읽는 중': { label: '읽는 중', color: '#F5A623', bg: '#FFF7E6' },
-  완독: { label: '완독', color: '#3B82F6', bg: '#EFF6FF' },
-  하차: { label: '멈춘 책', color: '#F43F5E', bg: '#FFF1F3' },
+const STATUS_TABS = [
+  { label: '전체 상태', key: 'ALL' },
+  { label: '읽고 싶어요', key: '책바구니' },
+  { label: '읽기 전', key: '읽기 전' },
+  { label: '읽는 중', key: '읽는 중' },
+  { label: '완독', key: '완독' },
+  { label: '멈춘 책', key: '하차' },
+] as const;
+
+const STATUS_STYLE: Record<string, { label: string; color: string; bg: string; ribbon: string }> = {
+  책바구니: { label: '읽고 싶어요', color: '#8B8F97', bg: '#F3F4F6', ribbon: '#A7ADB5' },
+  '읽기 전': { label: '읽기 전', color: '#8B8F97', bg: '#F3F4F6', ribbon: '#A7ADB5' },
+  '읽는 중': { label: '읽는 중', color: '#A88435', bg: '#FFF7E6', ribbon: '#D6B56D' },
+  완독: { label: '완독', color: '#5F7FA8', bg: '#EEF4FB', ribbon: '#8EA8C8' },
+  하차: { label: '멈춘 책', color: '#B96B7D', bg: '#FFF1F3', ribbon: '#B98A94' },
 };
 
 const GENRE_STYLE: Record<string, { label: string; color: string; bg: string }> = {
-  BL: { label: 'BL', color: '#3B82F6', bg: '#EAF3FF' },
+  BL: { label: 'BL', color: '#5B8DEF', bg: '#EAF3FF' },
   ROMANCE: { label: '로맨스', color: '#F472B6', bg: '#FDF2F8' },
-  'RO-FAN': { label: '로맨스판타지', color: '#F59E0B', bg: '#FFF7E6' },
+  'RO-FAN': { label: '로맨스판타지', color: '#D99A19', bg: '#FFF7E6' },
   LITERATURE: { label: '일반서적', color: '#8B5CF6', bg: '#F3EFFF' },
 };
 
@@ -115,7 +123,15 @@ function getPrimaryCategoryKey(book: BookItem) {
 
 function getStatusInfo(status: string | null) {
   if (!status) return STATUS_STYLE['책바구니'];
-  return STATUS_STYLE[status] ?? { label: status, color: '#9CA3AF', bg: '#F3F4F6' };
+
+  return (
+    STATUS_STYLE[status] ?? {
+      label: status,
+      color: '#8B8F97',
+      bg: '#F3F4F6',
+      ribbon: '#A7ADB5',
+    }
+  );
 }
 
 function getGenreInfo(categoryKey: string) {
@@ -133,7 +149,10 @@ function StarRating({ rating }: { rating: number | null | undefined }) {
   return (
     <div className="starRating" aria-label={`${safeRating}점`}>
       {Array.from({ length: 5 }, (_, index) => (
-        <span key={index} className={index < safeRating ? 'starItem activeStar' : 'starItem inactiveStar'}>
+        <span
+          key={index}
+          className={index < safeRating ? 'starItem activeStar' : 'starItem inactiveStar'}
+        >
           ★
         </span>
       ))}
@@ -141,36 +160,16 @@ function StarRating({ rating }: { rating: number | null | undefined }) {
   );
 }
 
-function formatProgress(book: BookItem | null) {
-  if (!book) return '-';
-
-  if (typeof book.progress === 'number' && !Number.isNaN(book.progress)) {
-    const percent = book.progress <= 1 ? book.progress * 100 : book.progress;
-    return `${Math.round(percent)}%`;
-  }
-
-  if (book.progressText) {
-    const matched = book.progressText.match(/-?\d+(\.\d+)?/);
-    if (!matched) return book.progressText;
-
-    const parsed = Number(matched[0]);
-    if (Number.isNaN(parsed)) return book.progressText;
-
-    const percent = parsed <= 1 ? parsed * 100 : parsed;
-    return `${Math.round(percent)}%`;
-  }
-
-  return '-';
-}
-
 export default function BookShelvesPage() {
   const wrapRef = useRef<HTMLElement | null>(null);
   const [scale, setScale] = useState(1);
+  const [isMobile, setIsMobile] = useState(false);
 
   const [books, setBooks] = useState<BookItem[]>([]);
   const [selectedBook, setSelectedBook] = useState<BookItem | null>(null);
   const [showAddConfirm, setShowAddConfirm] = useState(false);
   const [activeCategory, setActiveCategory] = useState<string>('ALL');
+  const [activeStatus, setActiveStatus] = useState<string>('ALL');
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
@@ -181,12 +180,18 @@ export default function BookShelvesPage() {
   useEffect(() => {
     const element = wrapRef.current;
     if (!element) return;
-
+  
     const observer = new ResizeObserver(([entry]) => {
       const width = entry.contentRect.width;
-      setScale(Math.min(1, width / BASE_WIDTH));
+      const height = entry.contentRect.height;
+  
+      const mobile = width <= 480;
+      const designWidth = mobile ? MOBILE_WIDTH : DESKTOP_WIDTH;
+  
+      setIsMobile(mobile);
+      setScale(Math.min(1, width / designWidth, height / BASE_HEIGHT));
     });
-
+  
     observer.observe(element);
     return () => observer.disconnect();
   }, []);
@@ -248,13 +253,17 @@ export default function BookShelvesPage() {
 
   useEffect(() => {
     setPage(1);
-  }, [activeCategory, searchQuery]);
+  }, [activeCategory, activeStatus, searchQuery]);
 
   const filteredBooks = useMemo(() => {
     let result = books;
 
     if (activeCategory !== 'ALL') {
       result = result.filter((book) => getBookCategoryKeys(book).includes(activeCategory));
+    }
+
+    if (activeStatus !== 'ALL') {
+      result = result.filter((book) => book.status === activeStatus);
     }
 
     const query = searchQuery.trim().toLowerCase();
@@ -267,15 +276,7 @@ export default function BookShelvesPage() {
           ...(book.category ?? []).map((item) => item.title ?? ''),
         ].join(' ');
 
-        return [
-          book.title,
-          book.author,
-          book.status,
-          book.platform,
-          book.progressText,
-          categoryTexts,
-          book.ratingText,
-        ]
+        return [book.title, book.author, book.status, book.platform, categoryTexts, book.ratingText]
           .filter(Boolean)
           .join(' ')
           .toLowerCase()
@@ -284,14 +285,15 @@ export default function BookShelvesPage() {
     }
 
     return result;
-  }, [books, activeCategory, searchQuery]);
+  }, [books, activeCategory, activeStatus, searchQuery]);
 
-  const totalPages = Math.max(1, Math.ceil(filteredBooks.length / PAGE_SIZE));
-  const visibleBooks = filteredBooks.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const totalPages = isMobile
+  ? Math.max(1, Math.ceil(filteredBooks.length / 5))
+  : Math.max(1, Math.ceil(filteredBooks.length / PAGE_SIZE));
 
-  const footerLabel = searchQuery.trim()
-    ? `${filteredBooks.length}개 검색됨 · 7개씩 표시`
-    : `${filteredBooks.length}개 · 7개씩 표시`;
+  const visibleBooks = isMobile
+    ? filteredBooks.slice((page - 1) * 5, page * 5)
+    : filteredBooks.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   const selectedStatus = selectedBook ? getStatusInfo(selectedBook.status) : null;
   const selectedCategoryKey = selectedBook ? getPrimaryCategoryKey(selectedBook) : null;
@@ -302,49 +304,54 @@ export default function BookShelvesPage() {
       <div
         className="scaleBox"
         style={{
-          width: BASE_WIDTH * scale,
+          width: (isMobile ? MOBILE_WIDTH : DESKTOP_WIDTH) * scale,
           height: BASE_HEIGHT * scale,
         }}
       >
         <section
-          className="widget"
+          className={`widget ${isMobile ? 'mobileWidget' : ''}`}
           style={{
+            width: isMobile ? MOBILE_WIDTH : DESKTOP_WIDTH,
             transform: `scale(${scale})`,
           }}
         >
           <header className="topBar">
             <div className="windowDots">
-              <span className="dot red" />
-              <span className="dot yellow" />
-              <span className="dot green" />
+              <span />
+              <span />
+              <span />
             </div>
 
-            <h1>BOOK SHELVES</h1>
+            <div className="titleBox">
+              <h1>MY BOOKSHELF</h1>
+            </div>
 
-            <button
-              type="button"
-              className={`searchButton ${searchOpen ? 'on' : ''}`}
-              onClick={() => setSearchOpen((prev) => !prev)}
-              aria-label="도서 검색"
-              title="도서 검색"
-            >
-              ⌕
-            </button>
+            <div className="topActions">
+              <button
+                type="button"
+                className={`iconButton ${searchOpen ? 'on' : ''}`}
+                onClick={() => setSearchOpen((prev) => !prev)}
+                aria-label="도서 검색"
+                title="도서 검색"
+              >
+                ⌕
+              </button>
 
-            <button
-              type="button"
-              className="addButton"
-              onClick={() => setShowAddConfirm(true)}
-              disabled={creating}
-              aria-label="새 책 추가"
-              title="새 책 추가"
-            >
-              +
-            </button>
+              <button
+                type="button"
+                className="iconButton"
+                onClick={() => setShowAddConfirm(true)}
+                disabled={creating}
+                aria-label="새 책 추가"
+                title="새 책 추가"
+              >
+                +
+              </button>
+            </div>
 
             {searchOpen && (
               <div className="searchPopover">
-                <span className="searchIcon">⌕</span>
+                <span>⌕</span>
                 <input
                   value={searchQuery}
                   onChange={(event) => setSearchQuery(event.target.value)}
@@ -352,12 +359,7 @@ export default function BookShelvesPage() {
                   autoFocus
                 />
                 {searchQuery && (
-                  <button
-                    type="button"
-                    className="clearSearch"
-                    onClick={() => setSearchQuery('')}
-                    aria-label="검색어 지우기"
-                  >
+                  <button type="button" onClick={() => setSearchQuery('')} aria-label="검색어 지우기">
                     ×
                   </button>
                 )}
@@ -365,81 +367,75 @@ export default function BookShelvesPage() {
             )}
           </header>
 
-          <nav className="tabs">
+          <nav className="genreTabs">
             {CATEGORY_TABS.map((tab) => (
               <button
                 key={tab.key}
                 type="button"
-                className={`tab ${activeCategory === tab.key ? 'active' : ''}`}
+                className={`genreTab ${activeCategory === tab.key ? 'active' : ''}`}
                 onClick={() => setActiveCategory(tab.key)}
               >
                 {tab.label}
-                {activeCategory === tab.key && <span className="activeDot" />}
+                {activeCategory === tab.key && <span />}
               </button>
             ))}
           </nav>
 
-          <section className="tableCard">
-            <div className="tableHeader">
-              <span className="headStatus">상태</span>
-              <span className="headTitle">책 제목</span>
-              <span className="headAuthor">저자</span>
-              <span className="headGenre">장르</span>
-              <span className="headRating">평점</span>
-            </div>
+          <nav className="statusTabs">
+            {STATUS_TABS.map((tab) => (
+              <button
+                key={tab.key}
+                type="button"
+                className={`statusTab ${activeStatus === tab.key ? 'active' : ''}`}
+                onClick={() => setActiveStatus(tab.key)}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </nav>
 
-            <div className="tableBody">
-              {loading ? (
-                <div className="empty">불러오는 중...</div>
-              ) : error ? (
-                <div className="empty error">{error}</div>
-              ) : visibleBooks.length === 0 ? (
-                <div className="empty">
-                  {searchQuery ? '검색 결과가 없습니다.' : '표시할 책이 없습니다.'}
-                </div>
-              ) : (
-                visibleBooks.map((book, index) => {
+          <section className="booksArea">
+            {loading ? (
+              <div className="empty">불러오는 중...</div>
+            ) : error ? (
+              <div className="empty error">{error}</div>
+            ) : visibleBooks.length === 0 ? (
+              <div className="empty">
+                {searchQuery ? '검색 결과가 없습니다.' : '표시할 책이 없습니다.'}
+              </div>
+            ) : (
+              <div className="bookGrid">
+                {visibleBooks.map((book, index) => {
                   const status = getStatusInfo(book.status);
                   const categoryKey = getPrimaryCategoryKey(book);
                   const genre = categoryKey ? getGenreInfo(categoryKey) : null;
 
                   return (
-                    <article className="tableRow" key={`${book.title}-${index}`}>
-                      <div className="statusCell">
-                        <span
-                          className="statusDot"
-                          style={{
-                            backgroundColor: status.color,
-                            boxShadow: `0 0 0 3px ${status.bg}`,
-                          }}
-                        />
-                        <span>{status.label}</span>
+                    <article className="bookCard" key={`${book.id ?? book.title}-${index}`}>
+                      <span className="statusRibbon" style={{ backgroundColor: status.ribbon }}>
+                        {status.label}
+                      </span>
+
+                      <div className="coverWrap">
+                        {book.cover ? (
+                          <img src={book.cover} alt="" className="cover" loading="lazy" />
+                        ) : (
+                          <div className="coverPlaceholder">BOOK</div>
+                        )}
                       </div>
 
-                      <div className="coverCell">
-                        <div className="coverBox">
-                          {book.cover ? (
-                            <img src={book.cover} alt="" className="cover" loading="lazy" />
-                          ) : (
-                            <div className="coverPlaceholder">BOOK</div>
-                          )}
-                        </div>
-                      </div>
+                      <button
+                        type="button"
+                        className="bookTitle"
+                        onClick={() => setSelectedBook(book)}
+                        title={book.title ?? '제목 없음'}
+                      >
+                        {book.title ?? '제목 없음'}
+                      </button>
 
-                      <div className="titleCell">
-                        <button
-                          type="button"
-                          className="bookTitle bookButton"
-                          onClick={() => setSelectedBook(book)}
-                          title={book.title ?? '제목 없음'}
-                        >
-                          {book.title ?? '제목 없음'}
-                        </button>
-                      </div>
+                      <p className="author">{book.author ?? '저자 미상'}</p>
 
-                      <div className="authorCell">{book.author ?? '-'}</div>
-
-                      <div className="genreCell">
+                      <div className="bottomLine">
                         {genre ? (
                           <span
                             className="genrePill"
@@ -451,22 +447,24 @@ export default function BookShelvesPage() {
                             {genre.label}
                           </span>
                         ) : (
-                          <span className="noRating">-</span>
+                          <span className="genrePill emptyGenre">-</span>
                         )}
-                      </div>
 
-                      <div className="ratingCell">
                         <StarRating rating={book.rating} />
                       </div>
                     </article>
                   );
-                })
-              )}
-            </div>
+                })}
+              </div>
+            )}
           </section>
 
           <footer className="footer">
-            <p>{footerLabel}</p>
+          <p>
+            {searchQuery.trim()
+              ? `검색 결과 ${filteredBooks.length}개`
+              : `총 ${filteredBooks.length}개`}
+          </p>
 
             <div className="pagination">
               <button
@@ -478,24 +476,9 @@ export default function BookShelvesPage() {
                 ‹
               </button>
 
-              {Array.from({ length: totalPages }, (_, i) => i + 1)
-                .filter((p) => {
-                  if (totalPages <= 5) return true;
-                  return p === 1 || p === totalPages || Math.abs(p - page) <= 1;
-                })
-                .map((p, idx, arr) => (
-                  <span key={p} className="pageGroup">
-                    {idx > 0 && p - arr[idx - 1] > 1 && <span className="ellipsis">…</span>}
-
-                    <button
-                      type="button"
-                      className={page === p ? 'current' : ''}
-                      onClick={() => setPage(p)}
-                    >
-                      {p}
-                    </button>
-                  </span>
-                ))}
+              <span>
+                {page} / {totalPages}
+              </span>
 
               <button
                 type="button"
@@ -544,7 +527,6 @@ export default function BookShelvesPage() {
               <div className="detailMeta">
                 {selectedStatus && (
                   <span
-                    className="detailStatus"
                     style={{
                       color: selectedStatus.color,
                       backgroundColor: selectedStatus.bg,
@@ -556,7 +538,6 @@ export default function BookShelvesPage() {
 
                 {selectedGenre && (
                   <span
-                    className="detailGenre"
                     style={{
                       color: selectedGenre.color,
                       backgroundColor: selectedGenre.bg,
@@ -572,13 +553,15 @@ export default function BookShelvesPage() {
                   <span>플랫폼</span>
                   <strong>{selectedBook.platform ?? '-'}</strong>
                 </div>
+
                 <div>
-                  <span>진행률</span>
-                  <strong>{formatProgress(selectedBook)}</strong>
+                  <span>장르</span>
+                  <strong>{selectedGenre?.label ?? '-'}</strong>
                 </div>
+
                 <div>
                   <span>평점</span>
-                  <strong className="detailStarValue">
+                  <strong>
                     <StarRating rating={selectedBook.rating} />
                   </strong>
                 </div>
@@ -607,18 +590,12 @@ export default function BookShelvesPage() {
                 <div className="confirmButtons">
                   <button
                     type="button"
-                    className="cancelAdd"
                     onClick={() => setShowAddConfirm(false)}
                     disabled={creating}
                   >
                     취소
                   </button>
-                  <button
-                    type="button"
-                    className="confirmAdd"
-                    onClick={createBookAndOpen}
-                    disabled={creating}
-                  >
+                  <button type="button" onClick={createBookAndOpen} disabled={creating}>
                     {creating ? '추가 중...' : '추가하기'}
                   </button>
                 </div>
@@ -644,11 +621,6 @@ export default function BookShelvesPage() {
           }
         }
 
-        :global(#__next),
-        :global(main) {
-          background: transparent !important;
-        }
-
         * {
           box-sizing: border-box;
         }
@@ -658,12 +630,10 @@ export default function BookShelvesPage() {
           inset: 0;
           width: 100%;
           height: 100%;
-          min-height: 0vh;
-          background: #ffffff;
           display: flex;
           align-items: center;
           justify-content: center;
-          padding: 0px;
+          background: #ffffff;
           overflow: hidden;
           font-family:
             -apple-system,
@@ -672,12 +642,11 @@ export default function BookShelvesPage() {
             'Pretendard',
             'Apple SD Gothic Neo',
             sans-serif;
-          color: var(--text-main);
         }
 
         @media (prefers-color-scheme: dark) {
           .page {
-              background: #191919;
+            background: #191919;
           }
         }
 
@@ -687,147 +656,130 @@ export default function BookShelvesPage() {
         }
 
         .widget {
-          --widget-bg: #f5f5f7;
+          --widget-bg: #fcfcfd;
           --card-bg: #ffffff;
-          --text-main: #111827;
-          --text-sub: #6b7280;
-          --border: #dfe3ea;
-          --soft-border: #eef0f4;
-          --tab-bg: #f7f7f9;
-          --shadow: rgba(17, 24, 39, 0.08);
-          --track: #e5e7eb;
+          --text-main: #4b5563;
+          --text-sub: #98a2b3;
+          --border: #e7ebf2;
+          --shadow: rgba(148, 163, 184, 0.08);
 
-          width: 560px;
-          height: 415px;
-          transform-origin: top left;
-          background: var(--widget-bg);
-          border: 1px solid var(--border);
-          border-radius: 18px;
-          box-shadow: none;
-          padding: 12px;
-          display: flex;
-          flex-direction: column;
-          overflow: hidden;
           position: absolute;
           top: 0;
           left: 0;
-        }
-
-        @media (prefers-color-scheme: dark) {
-          .widget {
-            --widget-bg: #1f2024;
-            --card-bg: #2a2b31;
-            --text-main: #f3f4f6;
-            --text-sub: #a1a1aa;
-            --border: #3f4148;
-            --soft-border: #3a3b42;
-            --tab-bg: #24252a;
-            --shadow: rgba(0, 0, 0, 0.35);
-            --track: #4b5563;
-
-            box-shadow: none;
-          }
-
+          height: 455px;
+          transform-origin: top left;
+          overflow: hidden;
+          border: 1px solid var(--border);
+          border-radius: 18px;
+          background: var(--widget-bg);
+          color: var(--text-main);
+          display: flex;
+          flex-direction: column;
         }
 
         .topBar {
           position: relative;
-          height: 30px;
-          flex: 0 0 30px;
+          height: 45px;
+          flex: 0 0 45px;
+
+          border-bottom: 1px solid #edf1f6;
+
           display: flex;
           align-items: center;
           justify-content: center;
-          z-index: 10;
+
+          background: rgba(255, 255, 255, 0.88);
+
+          backdrop-filter: blur(12px);
         }
 
         .windowDots {
           position: absolute;
-          left: 0;
-          top: 10px;
+          left: 13px;
+          top: 17px;
           display: flex;
-          gap: 5px;
+          gap: 6px;
         }
 
-        .dot {
-          width: 8px;
-          height: 8px;
+        .windowDots span {
+          width: 7px;
+          height: 7px;
           border-radius: 999px;
-          display: block;
+
+          background: #c8d0dc;
         }
 
-        .red {
-          background: #ff5f57;
-        }
-
-        .yellow {
-          background: #febc2e;
-        }
-
-        .green {
-          background: #28c840;
+        .titleBox {
+          text-align: center;
         }
 
         h1 {
           margin: 0;
-          color: var(--text-sub);
-          font-size: 10px;
-          font-weight: 700;
-          letter-spacing: 0.42em;
+          color: #4d5058;
+          font-size: 10.5px;
+          font-weight: 800;
+          letter-spacing: 0.48em;
         }
 
-        .searchButton,
-        .addButton {
+        .titleBox p {
+          margin: 2px 0 0;
+          color: var(--text-sub);
+          font-size: 9px;
+          font-weight: 650;
+          letter-spacing: 0.08em;
+        }
+
+        .topActions {
           position: absolute;
-          top: 2px;
-          width: 26px;
-          height: 26px;
-          border-radius: 9px;
-          border: 1px solid var(--border);
-          background: var(--card-bg);
-          color: var(--text-sub);
-          font-size: 17px;
+          right: 12px;
+          top: 8px;
+          display: flex;
+          gap: 7px;
+        }
+
+        .iconButton {
+          width: 29px;
+          height: 29px;
+
+          border-radius: 11px;
+
+          border: 1px solid #e3e9f1;
+
+          background: rgba(255, 255, 255, 0.96);
+
+          color: #7d8796;
+
+          font-size: 16px;
+
           line-height: 1;
+
           cursor: pointer;
+
           box-shadow:
-            0 5px 12px var(--shadow),
-            inset 0 1px 0 rgba(255, 255, 255, 0.12);
+            0 2px 8px rgba(148, 163, 184, 0.06),
+            inset 0 1px 0 rgba(255, 255, 255, 0.9);
         }
 
-        .searchButton {
-          right: 34px;
-          font-size: 15px;
-        }
-
-        .searchButton.on {
-          color: #3b82f6;
-          background: #ffffff;
-        }
-
-        .addButton {
-          right: 0;
+        .iconButton.on {
+          background: #fff;
+          color: #5b8def;
         }
 
         .searchPopover {
           position: absolute;
-          right: 34px;
-          top: 34px;
-          width: 178px;
-          height: 30px;
-          border-radius: 999px;
+          right: 78px;
+          top: 8px;
+          width: 170px;
+          height: 29px;
           border: 1px solid var(--border);
-          background: var(--card-bg);
+          border-radius: 999px;
+          background: #fff;
           box-shadow: 0 10px 24px var(--shadow);
           display: flex;
           align-items: center;
-          gap: 5px;
-          padding: 0 8px;
+          gap: 6px;
+          padding: 0 9px;
           z-index: 20;
-        }
-
-        .searchIcon {
-          color: var(--text-sub);
-          font-size: 12px;
-          flex-shrink: 0;
         }
 
         .searchPopover input {
@@ -836,165 +788,199 @@ export default function BookShelvesPage() {
           border: 0;
           outline: none;
           background: transparent;
-          color: var(--text-main);
           font-size: 9px;
-          font-weight: 600;
+          font-weight: 650;
+          color: var(--text-main);
         }
 
-        .searchPopover input::placeholder {
-          color: var(--text-sub);
-          opacity: 0.75;
-        }
-
-        .clearSearch {
+        .searchPopover button {
           border: 0;
           background: transparent;
           color: var(--text-sub);
           cursor: pointer;
           font-size: 12px;
-          line-height: 1;
           padding: 0;
         }
 
-        .tabs {
+        .genreTabs {
           display: grid;
-          grid-template-columns: repeat(5, minmax(0, 1fr));
-          gap: 8px;
-          margin: 10px 0 10px;
-          flex: 0 0 auto;
+          grid-template-columns: repeat(5, 1fr);
+          gap: 6px;
+          padding: 8px 20px 5px;
         }
 
-        .tab {
+        .genreTab {
           height: 25px;
           min-width: 0;
-          border: 1px solid var(--border);
+
           border-radius: 999px;
-          background: var(--tab-bg);
-          color: var(--text-main);
+          border: 1px solid #e6ebf2;
+
+          background: rgba(255, 255, 255, 0.92);
+
+          color: #5f6b7a;
+
           font-size: 9px;
-          font-weight: 650;
+          font-weight: 750;
+
           cursor: pointer;
+
           display: inline-flex;
           align-items: center;
           justify-content: center;
           gap: 4px;
+
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
+
+          transition: all 0.15s ease;
         }
 
-        .tab.active {
-          background: var(--card-bg);
+        .genreTab.active {
+          background: #f2f6fb;
+
+          border-color: #d8e2ef;
+
+          color: #53657d;
+
           box-shadow:
-            0 5px 12px var(--shadow),
-            inset 0 1px 0 rgba(255, 255, 255, 0.12);
+            inset 0 1px 0 rgba(255, 255, 255, 0.9),
+            0 4px 10px rgba(148, 163, 184, 0.08);
         }
 
-        .activeDot {
+        .genreTab span {
           width: 4px;
           height: 4px;
           border-radius: 999px;
-          background: #3b82f6;
+          background: #555861;
           flex-shrink: 0;
         }
 
-        .tableCard {
-          height: 293px;
-          flex: 0 0 293px;
-          background: var(--card-bg);
-          border: 1px solid var(--border);
-          border-radius: 13px;
-          overflow: hidden;
-          box-shadow: none;
-        }
-
-        .tableHeader,
-        .tableRow {
+        .statusTabs {
           display: grid;
-          grid-template-columns: 88px 30px minmax(0, 1.7fr) minmax(52px, 0.72fr) 58px 92px;
+          grid-template-columns: repeat(6, 1fr);
           align-items: center;
+          padding: 3px 22px 10px;
+          overflow: visible;
+          flex: 0 0 auto;
         }
 
-        .tableHeader {
+        .statusTabs::-webkit-scrollbar {
+          display: none;
+        }
+
+        .statusTab {
+          position: relative;
           height: 24px;
-          padding: 0 10px;
-          color: var(--text-sub);
-          font-size: 8.5px;
-          font-weight: 650;
-          border-bottom: 1px solid var(--soft-border);
+          padding: 0;
+          border: 0;
+          border-radius: 0;
+          background: transparent;
+          color: #98a2b3;
+          font-size: 8.7px;
+          font-weight: 800;
+          cursor: pointer;
+          white-space: nowrap;
         }
 
-        .headStatus {
-          text-align: left;
-          padding-left: 22px;
+        .statusTab.active {
+          color: #5b8def;
         }
 
-        .headAuthor,
-        .headGenre,
-        .headRating {
-          text-align: center;
+        .statusTab.active::after {
+          content: '';
+          position: absolute;
+          left: 50%;
+          bottom: 1px;
+          width: 22px;
+          height: 2px;
+          border-radius: 999px;
+          background: #5b8def;
+          transform: translateX(-50%);
         }
 
-        .headTitle {
-          grid-column: 2 / span 2;
-          text-align: center;
+        .statusTab:not(:last-child)::before {
+          content: '';
+          position: absolute;
+          right: 0;
+          top: 7px;
+          width: 1px;
+          height: 10px;
+          border-radius: 999px;
+          background: #d7dce5;
+          opacity: 0.75;
         }
 
-        .tableBody {
-          height: 259px;
+        .booksArea {
+          height: 300px;
+          flex: 0 0 300px;
+          padding: 0 14px;
           overflow: hidden;
         }
 
-        .tableRow {
-          height: 37px;
-          padding: 0 10px;
-          border-bottom: 1px solid var(--soft-border);
-          font-size: 9.3px;
-          background: var(--card-bg);
+        .bookGrid {
+          height: 100%;
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          grid-template-rows: repeat(2, 145px);
+          gap: 10px 9px;
         }
 
-        .tableRow:last-child {
-          border-bottom: 0;
-        }
+        .bookCard {
+          position: relative;
 
-        .statusCell {
+          height: 145px;
+
+          border: 1px solid #e7ebf2;
+
+          border-radius: 14px;
+
+          background: rgba(255, 255, 255, 0.95);
+
+          box-shadow:
+            0 4px 12px rgba(148, 163, 184, 0.05),
+            0 1px 2px rgba(148, 163, 184, 0.04);
+
+          padding: 18px 9px 8px;
+
+          overflow: hidden;
+
           display: flex;
-          align-items: center;
-          justify-content: flex-start;
-          gap: 6px;
-          color: var(--text-main);
-          font-weight: 650;
-          min-width: 0;
-          white-space: nowrap;
-          padding-left: 8px;
+          flex-direction: column;
         }
 
-        .statusDot {
-          width: 5px;
-          height: 5px;
-          border-radius: 999px;
-          flex-shrink: 0;
-        }
-
-        .coverCell {
+        .statusRibbon {
+          position: absolute;
+          left: 8px;
+          top: 0;
+          min-width: 36px;
+          height: 21px;
+          padding: 0 7px;
+          border-radius: 0 0 4px 4px;
+          color: #fff;
+          font-size: 8.5px;
+          font-weight: 800;
           display: flex;
           align-items: center;
           justify-content: center;
+          box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
+          z-index: 2;
         }
 
-        .coverBox {
-          width: 22px;
-          height: 31px;
-          border-radius: 5px;
+        .coverWrap {
+          width: 50px;
+          height: 70px;
+          margin: 0 auto 8px;
+          border-radius: 6px;
           overflow: hidden;
-          flex-shrink: 0;
-          background: var(--track);
-          box-shadow: 0 1px 4px var(--shadow);
+          background: #e8e8ea;
+          box-shadow: 0 6px 12px rgba(0, 0, 0, 0.13);
         }
 
         .cover {
-          width: 22px;
-          height: 31px;
+          width: 100%;
+          height: 100%;
           display: block;
           object-fit: cover;
           object-position: center;
@@ -1006,74 +992,75 @@ export default function BookShelvesPage() {
           display: flex;
           align-items: center;
           justify-content: center;
-          font-size: 4.5px;
           color: var(--text-sub);
-        }
-
-        .titleCell {
-          min-width: 0;
-          padding-left: 7px;
+          font-size: 7px;
+          font-weight: 800;
         }
 
         .bookTitle {
-          min-width: 0;
-          width: 100%;
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          color: var(--text-main);
-          font-weight: 700;
           display: block;
-        }
-
-        .bookButton {
+          width: 100%;
           border: 0;
           background: transparent;
           padding: 0;
+          margin: 0 0 3px;
           text-align: left;
-          cursor: pointer;
-          font: inherit;
-        }
-
-        .bookButton:hover {
-          color: #3b82f6;
-        }
-
-        .authorCell {
           color: var(--text-main);
+          font-size: 9.5px;
+          font-weight: 800;
+          line-height: 1.3;
+          cursor: pointer;
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
-          min-width: 0;
-          text-align: center;
         }
 
-        .genreCell {
+        .bookTitle:hover {
+          color: #5b8def;
+        }
+
+        .author {
+          display: block;
+          margin: 0 0 6px;
+          color: var(--text-sub);
+          font-size: 8.5px;
+          font-weight: 650;
+          line-height: 1.2;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        .bottomLine {
+          margin-top: -2px;
+
           display: flex;
           align-items: center;
-          justify-content: center;
+          justify-content: space-between;
+          gap: 4px;
+
+          height: 16px;
         }
 
         .genrePill {
+          max-width: 45px;
+          height: 14px;
+          padding: 0 6px;
+          border-radius: 6px;
+          font-size: 7.2px;
+          font-weight: 800;
           display: inline-flex;
           align-items: center;
           justify-content: center;
-          max-width: 54px;
-          height: 16px;
-          padding: 0 7px;
-          border-radius: 999px;
-          font-size: 8px;
-          font-weight: 700;
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
+          flex-shrink: 0;
         }
 
-        .ratingCell {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          min-width: 0;
+        .emptyGenre {
+          color: var(--text-sub);
+          background: #f3f4f6;
         }
 
         :global(.starRating) {
@@ -1081,21 +1068,16 @@ export default function BookShelvesPage() {
           align-items: center;
           justify-content: center;
           gap: 1px;
-          width: 66px;
-          height: 18px;
+          min-width: 54px;
+          height: 16px;
           border-radius: 999px;
-          background: rgba(245, 166, 35, 0.1);
-          box-shadow:
-            0 0 10px rgba(245, 166, 35, 0.12),
-            inset 0 1px 0 rgba(255, 255, 255, 0.18);
-          overflow: hidden;
+          flex-shrink: 0;
         }
 
         :global(.starItem) {
-          font-size: 11px;
+          font-size: 10px;
           line-height: 1;
           font-family: Arial, sans-serif;
-          transform: scaleX(1.08);
         }
 
         :global(.activeStar) {
@@ -1108,17 +1090,19 @@ export default function BookShelvesPage() {
         }
 
         .noRating {
-          color: var(--text-sub);
-          font-weight: 650;
+          color: #b6bac3;
+          font-size: 10px;
+          font-weight: 750;
         }
 
         .empty {
-          height: 259px;
+          height: 100%;
           display: flex;
           align-items: center;
           justify-content: center;
           color: var(--text-sub);
           font-size: 10px;
+          font-weight: 700;
         }
 
         .empty.error {
@@ -1126,76 +1110,71 @@ export default function BookShelvesPage() {
         }
 
         .footer {
-          height: 28px;
-          flex: 0 0 28px;
+          height: 42px;
+          flex: 0 0 42px;
           display: grid;
           grid-template-columns: 1fr auto 1fr;
           align-items: center;
-          padding: 0 3px;
+          padding: 0 14px 10px;
           color: var(--text-sub);
-          font-size: 8.5px;
+          font-size: 9px;
+          font-weight: 700;
+          overflow: visible;
         }
 
         .footer p {
           margin: 0;
+          height: 22px;
+          line-height: 22px;
+          display: flex;
+          align-items: center;
+          overflow: visible;
         }
 
         .pagination {
           display: flex;
           align-items: center;
           justify-content: center;
-          gap: 3px;
+          gap: 7px;
+          height: 22px;
+          line-height: 22px;
+          overflow: visible;
         }
 
-        .pagination button {
+        .pagination span {
+          height: 22px;
+          line-height: 22px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          overflow: visible;
+        }
+
+        .pagination button,
+        .refreshButton {
           width: 20px;
           height: 20px;
+          border: 1px solid var(--border);
           border-radius: 7px;
-          border: 0;
-          background: transparent;
-          color: var(--text-main);
-          font-size: 9px;
-          cursor: pointer;
-        }
-
-        .pagination button:disabled {
-          opacity: 0.35;
-          cursor: default;
-        }
-
-        .pagination .current {
-          background: #e8f0ff;
-          color: #1d4ed8;
-          font-weight: 700;
-        }
-
-        .pageGroup {
-          display: flex;
-          align-items: center;
-          gap: 3px;
-        }
-
-        .ellipsis {
+          background: #fff;
           color: var(--text-sub);
-          padding: 0 1px;
+          cursor: pointer;
+          font-size: 10px;
+          line-height: 18px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          padding: 0;
+        }
+
+        .pagination button:disabled,
+        .refreshButton:disabled {
+          opacity: 0.4;
+          cursor: default;
         }
 
         .refreshButton {
           justify-self: end;
-          width: 21px;
-          height: 21px;
-          border-radius: 7px;
-          border: 1px solid var(--border);
-          background: var(--card-bg);
-          color: var(--text-sub);
-          font-size: 11px;
-          cursor: pointer;
-          box-shadow: 0 3px 8px var(--shadow);
-        }
-
-        .refreshButton:disabled {
-          opacity: 0.45;
-          cursor: default;
         }
 
         .detailPanel {
@@ -1204,9 +1183,9 @@ export default function BookShelvesPage() {
           right: 12px;
           width: 176px;
           height: calc(100% - 24px);
-          border-radius: 15px;
+          border-radius: 16px;
           border: 1px solid var(--border);
-          background: rgba(255, 255, 255, 0.92);
+          background: rgba(255, 255, 255, 0.94);
           backdrop-filter: blur(18px);
           box-shadow: -8px 0 28px rgba(17, 24, 39, 0.14);
           z-index: 30;
@@ -1214,48 +1193,30 @@ export default function BookShelvesPage() {
           display: flex;
           flex-direction: column;
           align-items: center;
-          animation: slideIn 0.18s ease-out;
-        }
-
-        @media (prefers-color-scheme: dark) {
-          .detailPanel {
-            background: rgba(42, 43, 49, 0.94);
-          }
-        }
-
-        @keyframes slideIn {
-          from {
-            transform: translateX(12px);
-            opacity: 0;
-          }
-          to {
-            transform: translateX(0);
-            opacity: 1;
-          }
         }
 
         .closeDetail {
           position: absolute;
           top: 8px;
           right: 8px;
-          width: 20px;
-          height: 20px;
+          width: 21px;
+          height: 21px;
           border: 0;
           border-radius: 999px;
-          background: var(--tab-bg);
-          color: var(--text-sub);
+          background: #f3f4f6;
+          color: #8b8f97;
           cursor: pointer;
           font-size: 13px;
         }
 
         .detailCover {
-          width: 48px;
-          height: 68px;
+          width: 56px;
+          height: 78px;
+          margin-top: 8px;
           border-radius: 9px;
           overflow: hidden;
-          background: var(--track);
-          box-shadow: 0 6px 16px var(--shadow);
-          margin-top: 8px;
+          background: #e8e8ea;
+          box-shadow: 0 7px 16px rgba(0, 0, 0, 0.12);
         }
 
         .detailCover img {
@@ -1272,19 +1233,19 @@ export default function BookShelvesPage() {
           display: flex;
           align-items: center;
           justify-content: center;
-          color: var(--text-sub);
           font-size: 8px;
-          font-weight: 700;
+          color: var(--text-sub);
+          font-weight: 800;
         }
 
         .detailPanel h2 {
           width: 100%;
           margin: 10px 0 4px;
+          text-align: center;
           color: var(--text-main);
           font-size: 11.5px;
-          font-weight: 800;
-          line-height: 1.32;
-          text-align: center;
+          font-weight: 850;
+          line-height: 1.3;
           word-break: keep-all;
         }
 
@@ -1292,82 +1253,76 @@ export default function BookShelvesPage() {
           margin: 0;
           color: var(--text-sub);
           font-size: 8.5px;
-          font-weight: 650;
-          text-align: center;
+          font-weight: 700;
         }
 
         .detailMeta {
           display: flex;
-          flex-wrap: wrap;
           justify-content: center;
-          gap: 5px;
-          margin-top: 9px;
+          flex-wrap: wrap;
+          gap: 6px;
+          margin-top: 10px;
         }
 
-        .detailStatus,
-        .detailGenre {
-          height: 17px;
+        .detailMeta span {
+          height: 18px;
           padding: 0 8px;
           border-radius: 999px;
           display: inline-flex;
           align-items: center;
           justify-content: center;
           font-size: 8px;
-          font-weight: 750;
+          font-weight: 800;
         }
 
         .detailInfoList {
           width: 100%;
-          margin-top: 10px;
+          margin-top: 12px;
           display: grid;
-          gap: 5px;
+          gap: 6px;
         }
 
         .detailInfoList div {
-          min-height: 22px;
-          border-radius: 9px;
-          background: var(--tab-bg);
-          padding: 4px 7px;
+          min-height: 24px;
+          border-radius: 8px;
+          background: #f4f4f6;
+          padding: 5px 8px;
           display: flex;
           align-items: center;
           justify-content: space-between;
-          gap: 6px;
+          gap: 8px;
         }
 
         .detailInfoList span {
           color: var(--text-sub);
-          font-size: 7.5px;
-          font-weight: 700;
+          font-size: 8px;
+          font-weight: 800;
           flex-shrink: 0;
         }
 
         .detailInfoList strong {
+          min-width: 0;
           color: var(--text-main);
-          font-size: 8px;
-          font-weight: 800;
+          font-size: 8.5px;
+          font-weight: 850;
           text-align: right;
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
         }
 
-        .detailStarValue {
-          display: flex;
-          justify-content: flex-end;
-        }
-
         .openNotion {
           margin-top: auto;
           width: 100%;
-          height: 27px;
+          height: 30px;
+          border-radius: 11px;
           border: 1px solid var(--border);
-          border-radius: 10px;
-          background: var(--card-bg);
+          background: #fff;
           color: var(--text-main);
-          font-size: 9px;
-          font-weight: 750;
+          font-size: 9.5px;
+          font-weight: 850;
           cursor: pointer;
-          box-shadow: 0 5px 12px var(--shadow);
+          box-shadow: 0 5px 12px rgba(17, 24, 39, 0.08);
         }
 
         .confirmOverlay {
@@ -1385,7 +1340,7 @@ export default function BookShelvesPage() {
           width: 210px;
           border-radius: 17px;
           border: 1px solid var(--border);
-          background: var(--card-bg);
+          background: #fff;
           box-shadow: 0 16px 40px rgba(17, 24, 39, 0.18);
           padding: 16px;
           text-align: center;
@@ -1419,23 +1374,192 @@ export default function BookShelvesPage() {
           cursor: pointer;
           font-size: 9px;
           font-weight: 800;
-        }
-
-        .cancelAdd {
           border: 1px solid var(--border);
-          background: var(--tab-bg);
-          color: var(--text-sub);
+          background: #f7f7f8;
+          color: var(--text-main);
         }
 
-        .confirmAdd {
-          border: 1px solid #bfdbfe;
-          background: #e8f0ff;
-          color: #1d4ed8;
+        .confirmButtons button:last-child {
+          background: #eaf3ff;
+          color: #5b8def;
         }
 
         .confirmButtons button:disabled {
           opacity: 0.55;
           cursor: default;
+        }
+
+        .mobileWidget .topBar {
+          height: 43px;
+          flex: 0 0 43px;
+        }
+
+        .mobileWidget h1 {
+          font-size: 9.5px;
+          letter-spacing: 0.38em;
+        }
+
+        .mobileWidget .topActions {
+          right: 10px;
+          top: 8px;
+        }
+
+        .mobileWidget .iconButton {
+          width: 27px;
+          height: 27px;
+        }
+
+        .mobileWidget .genreTabs {
+          display: flex;
+          gap: 7px;
+          padding: 8px 12px 5px;
+          overflow-x: auto;
+          overflow-y: hidden;
+          scrollbar-width: none;
+        }
+
+        .mobileWidget .genreTabs::-webkit-scrollbar {
+          display: none;
+        }
+
+        .mobileWidget .genreTab {
+          flex: 0 0 auto;
+          width: auto;
+          min-width: 68px;
+          padding: 0 13px;
+        }
+
+        .mobileWidget .statusTabs {
+          display: grid;
+          grid-template-columns: repeat(6, 1fr);
+          align-items: center;
+          gap: 0;
+          padding: 3px 10px 10px;
+          overflow: visible;
+        }
+
+        .mobileWidget .statusTabs::-webkit-scrollbar {
+          display: none;
+        }
+
+        .mobileWidget .statusTab {
+          position: relative;
+          width: 100%;
+          height: 24px;
+          padding: 0;
+          border: 0;
+          background: transparent;
+          color: #98a2b3;
+          font-size: 8.3px;
+          font-weight: 800;
+          cursor: pointer;
+          white-space: nowrap;
+          text-align: center;
+        }
+
+        .mobileWidget .statusTab:not(:last-child)::before {
+          content: '';
+          position: absolute;
+          right: 0;
+          top: 7px;
+          width: 1px;
+          height: 10px;
+          border-radius: 999px;
+          background: #d7dce5;
+          opacity: 0.75;
+          display: block;
+        }
+
+        .mobileWidget .statusTab.active {
+          color: #5b8def;
+        }
+
+        .mobileWidget .statusTab.active::after {
+          content: '';
+          position: absolute;
+          left: 50%;
+          bottom: 1px;
+          width: 22px;
+          height: 2px;
+          border-radius: 999px;
+          background: #5b8def;
+          transform: translateX(-50%);
+        }
+
+        .mobileWidget .booksArea {
+          height: 308px;
+          flex: 0 0 308px;
+          padding: 0 12px;
+          overflow-y: auto;
+          overflow-x: hidden;
+          scrollbar-width: none;
+        }
+
+        .mobileWidget .booksArea::-webkit-scrollbar {
+          display: none;
+        }
+
+        .mobileWidget .bookGrid {
+          display: flex;
+          flex-direction: column;
+          gap: 9px;
+          height: auto;
+          padding-bottom: 8px;
+        }
+
+        .mobileWidget .bookCard {
+          height: 82px;
+          min-height: 82px;
+          border-radius: 14px;
+          padding: 9px 10px 9px 76px;
+          display: block;
+        }
+
+        .mobileWidget .statusRibbon {
+          left: 8px;
+          top: 0;
+          height: 19px;
+          min-width: 34px;
+          font-size: 7.8px;
+        }
+
+        .mobileWidget .coverWrap {
+          position: absolute;
+          left: 18px;
+          top: 16px;
+          width: 42px;
+          height: 58px;
+          margin: 0;
+        }
+
+        .mobileWidget .bookTitle {
+          margin: 7px 0 3px;
+          font-size: 10px;
+          line-height: 1.25;
+        }
+
+        .mobileWidget .author {
+          margin: 0 0 6px;
+          font-size: 8.5px;
+          line-height: 1.2;
+        }
+
+        .mobileWidget .bottomLine {
+          margin-top: 0;
+          height: 16px;
+        }
+
+        .mobileWidget .footer {
+          height: 30px;
+          flex: 0 0 30px;
+          padding: 0 12px;
+        }
+
+        .mobileWidget .pagination {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 7px;
         }
       `}</style>
     </main>
