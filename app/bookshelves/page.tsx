@@ -327,15 +327,15 @@ export default function BookShelvesPage() {
             </div>
 
             <div className="topActions">
-              <button
-                type="button"
-                className={`iconButton ${searchOpen ? 'on' : ''}`}
-                onClick={() => setSearchOpen((prev) => !prev)}
-                aria-label="도서 검색"
-                title="도서 검색"
-              >
-                ⌕
-              </button>
+            <button
+              type="button"
+              className={`iconButton ${searchOpen ? 'on' : ''}`}
+              onClick={() => setSearchOpen((prev) => !prev)}
+              aria-label="도서 검색"
+              title="도서 검색"
+            >
+              ⌕
+            </button>
 
               <button
                 type="button"
@@ -571,9 +571,18 @@ export default function BookShelvesPage() {
                 <button
                   type="button"
                   className="openNotion"
-                  onClick={() =>
-                    window.open(selectedBook.url ?? '', '_blank', 'noopener,noreferrer')
-                  }
+                  onClick={() => {
+                    const url = selectedBook.url ?? '';
+                    if (!url) return;
+                  
+                    const notionAppUrl = url.replace('https://www.notion.so/', 'notion://www.notion.so/');
+                  
+                    window.location.href = notionAppUrl;
+                  
+                    window.setTimeout(() => {
+                      window.open(url, '_blank', 'noopener,noreferrer');
+                    }, 800);
+                  }}
                 >
                   Notion에서 열기
                 </button>
