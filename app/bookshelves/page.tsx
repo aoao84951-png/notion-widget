@@ -27,7 +27,7 @@ type BookItem = {
   rating?: number | null;
 };
 
-const DESKTOP_WIDTH = 560;
+const DESKTOP_WIDTH = 600;
 const MOBILE_WIDTH = 340;
 const BASE_HEIGHT = 455;
 const PAGE_SIZE = 8;
@@ -188,8 +188,14 @@ export default function BookShelvesPage() {
       const mobile = width <= 480;
       const designWidth = mobile ? MOBILE_WIDTH : DESKTOP_WIDTH;
   
+      const nextScale = Math.min(
+        mobile ? 1 : 1.08,
+        width / designWidth,
+        height / BASE_HEIGHT
+      );
+  
       setIsMobile(mobile);
-      setScale(Math.min(1, width / designWidth, height / BASE_HEIGHT));
+      setScale(nextScale);
     });
   
     observer.observe(element);
@@ -575,13 +581,7 @@ export default function BookShelvesPage() {
                     const url = selectedBook.url ?? '';
                     if (!url) return;
                   
-                    const notionAppUrl = url.replace('https://www.notion.so/', 'notion://www.notion.so/');
-                  
-                    window.location.href = notionAppUrl;
-                  
-                    window.setTimeout(() => {
-                      window.open(url, '_blank', 'noopener,noreferrer');
-                    }, 800);
+                    window.open(url, '_blank', 'noopener,noreferrer');
                   }}
                 >
                   Notion에서 열기
@@ -675,6 +675,7 @@ export default function BookShelvesPage() {
           position: absolute;
           top: 0;
           left: 0;
+          width: 600px;
           height: 455px;
           transform-origin: top left;
           overflow: hidden;
