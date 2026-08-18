@@ -50,11 +50,11 @@ const STATUS_TABS = [
 ] as const;
 
 const STATUS_STYLE: Record<string, { label: string; color: string; bg: string; ribbon: string }> = {
-  책바구니: { label: '읽고 싶어요', color: '#8B8F97', bg: '#F3F4F6', ribbon: '#A7ADB5' },
-  '읽기 전': { label: '읽기 전', color: '#8B8F97', bg: '#F3F4F6', ribbon: '#A7ADB5' },
-  '읽는 중': { label: '읽는 중', color: '#A88435', bg: '#FFF7E6', ribbon: '#D6B56D' },
-  완독: { label: '완독', color: '#5F7FA8', bg: '#EEF4FB', ribbon: '#8EA8C8' },
-  하차: { label: '멈춘 책', color: '#B96B7D', bg: '#FFF1F3', ribbon: '#B98A94' },
+  책바구니: { label: '읽고 싶어요', color: '#7E817D', bg: '#F1F1EE', ribbon: '#C7C8C3' },
+  '읽기 전': { label: '읽기 전', color: '#7E817D', bg: '#F1F1EE', ribbon: '#C7C8C3' },
+  '읽는 중': { label: '읽는 중', color: '#9A8051', bg: '#FAF2DF', ribbon: '#DCC89D' },
+  완독: { label: '완독', color: '#68819B', bg: '#EAF1F6', ribbon: '#B7CAD9' },
+  하차: { label: '멈춘 책', color: '#96747C', bg: '#F5E9EC', ribbon: '#D8BCC3' },
 };
 
 const GENRE_STYLE: Record<string, { label: string; color: string; bg: string }> = {
@@ -329,7 +329,8 @@ export default function BookShelvesPage() {
             </div>
 
             <div className="titleBox">
-              <h1>MY BOOKSHELF</h1>
+              <span className="titleIcon" aria-hidden="true">▥</span>
+              <h1>BOOK SHELVES</h1>
             </div>
 
             <div className="topActions">
@@ -418,7 +419,15 @@ export default function BookShelvesPage() {
 
                   return (
                     <article className="bookCard" key={`${book.id ?? book.title}-${index}`}>
-                      <span className="statusRibbon" style={{ backgroundColor: status.ribbon }}>
+                      <span
+                        className="statusRibbon"
+                        style={{
+                          color: status.color,
+                          backgroundColor: status.bg,
+                          borderColor: status.ribbon,
+                        }}
+                      >
+                        <i aria-hidden="true" />
                         {status.label}
                       </span>
 
@@ -665,12 +674,15 @@ export default function BookShelvesPage() {
         }
 
         .widget {
-          --widget-bg: #fcfcfd;
-          --card-bg: #ffffff;
-          --text-main: #4b5563;
-          --text-sub: #98a2b3;
-          --border: #e7ebf2;
-          --shadow: rgba(148, 163, 184, 0.08);
+          --widget-bg: #ffffff;
+          --card-bg: #fff;
+
+          --text-main: #4f4f4b;
+          --text-sub: #9b9b96;
+
+          --border: #e2e2df;
+
+          --shadow: rgba(120, 130, 150, 0.05);
 
           position: absolute;
           top: 0;
@@ -680,11 +692,14 @@ export default function BookShelvesPage() {
           transform-origin: top left;
           overflow: hidden;
           border: 1px solid var(--border);
-          border-radius: 18px;
+          border-radius: 14px;
           background: var(--widget-bg);
           color: var(--text-main);
           display: flex;
           flex-direction: column;
+          box-shadow:
+            0 0 0 3px rgba(245, 245, 243, 0.9),
+            0 12px 28px rgba(55, 53, 47, 0.07);
         }
 
         .topBar {
@@ -692,15 +707,16 @@ export default function BookShelvesPage() {
           height: 45px;
           flex: 0 0 45px;
 
-          border-bottom: 1px solid #edf1f6;
+          border-bottom: 1px solid #e2e2df;
 
           display: flex;
           align-items: center;
           justify-content: center;
 
-          background: rgba(255, 255, 255, 0.88);
+          background: #f3f3f2;
 
           backdrop-filter: blur(12px);
+          box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.8);
         }
 
         .windowDots {
@@ -716,19 +732,51 @@ export default function BookShelvesPage() {
           height: 7px;
           border-radius: 999px;
 
-          background: #c8d0dc;
+          background: #c7c7c3;
+        }
+
+        .windowDots span:first-child {
+          background: #f2c9cf;
+        }
+
+        .windowDots span:nth-child(2) {
+          background: #f1d9a9;
+        }
+
+        .windowDots span:last-child {
+          background: #cddfd2;
         }
 
         .titleBox {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 7px;
           text-align: center;
+        }
+
+        .titleIcon {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          width: 17px;
+          height: 17px;
+          border: 1px solid #d7d7d3;
+          border-radius: 5px;
+          background: #fafaf9;
+          color: #8c8c87;
+          font-family: 'Courier New', monospace;
+          font-size: 10px;
+          line-height: 1;
         }
 
         h1 {
           margin: 0;
-          color: #4d5058;
-          font-size: 10.5px;
-          font-weight: 800;
-          letter-spacing: 0.48em;
+          color: #666661;
+          font-size: 10px;
+          font-family: 'Courier New', ui-monospace, monospace;
+          font-weight: 700;
+          letter-spacing: 0.22em;
         }
 
         .titleBox p {
@@ -751,13 +799,13 @@ export default function BookShelvesPage() {
           width: 29px;
           height: 29px;
 
-          border-radius: 11px;
+          border-radius: 9px;
 
-          border: 1px solid #e3e9f1;
+          border: 1px solid #dededb;
 
           background: rgba(255, 255, 255, 0.96);
 
-          color: #7d8796;
+          color: #898984;
 
           font-size: 16px;
 
@@ -765,14 +813,12 @@ export default function BookShelvesPage() {
 
           cursor: pointer;
 
-          box-shadow:
-            0 2px 8px rgba(148, 163, 184, 0.06),
-            inset 0 1px 0 rgba(255, 255, 255, 0.9);
+          box-shadow: 0 1px 2px rgba(55, 53, 47, 0.04);
         }
 
         .iconButton.on {
           background: #fff;
-          color: #5b8def;
+          color: #6f8fb9;
         }
 
         .searchPopover {
@@ -815,23 +861,25 @@ export default function BookShelvesPage() {
         .genreTabs {
           display: grid;
           grid-template-columns: repeat(5, 1fr);
-          gap: 6px;
-          padding: 8px 20px 5px;
+          gap: 8px;
+          padding: 10px 20px 6px;
+
+          background: var(--widget-bg);
         }
 
         .genreTab {
           height: 25px;
-          min-width: 0;
 
           border-radius: 999px;
-          border: 1px solid #e6ebf2;
+          border: 1px solid #dfdfdc;
 
-          background: rgba(255, 255, 255, 0.92);
+          background: #ffffff;
 
-          color: #5f6b7a;
+          color: #777772;
 
           font-size: 9px;
-          font-weight: 750;
+          font-family: 'Courier New', ui-monospace, monospace;
+          font-weight: 700;
 
           cursor: pointer;
 
@@ -840,30 +888,20 @@ export default function BookShelvesPage() {
           justify-content: center;
           gap: 4px;
 
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
-
           transition: all 0.15s ease;
         }
 
         .genreTab.active {
-          background: #f2f6fb;
-
-          border-color: #d8e2ef;
-
-          color: #53657d;
-
-          box-shadow:
-            inset 0 1px 0 rgba(255, 255, 255, 0.9),
-            0 4px 10px rgba(148, 163, 184, 0.08);
+          background: #edf3fa;
+          border-color: #cbd9e8;
+          color: #5f7fa5;
+          box-shadow: none;
         }
-
         .genreTab span {
           width: 4px;
           height: 4px;
           border-radius: 999px;
-          background: #555861;
+          background: #6f8fb9;
           flex-shrink: 0;
         }
 
@@ -871,7 +909,10 @@ export default function BookShelvesPage() {
           display: grid;
           grid-template-columns: repeat(6, 1fr);
           align-items: center;
-          padding: 3px 22px 10px;
+          padding: 4px 22px 10px;
+
+          background: var(--widget-bg);
+
           overflow: visible;
           flex: 0 0 auto;
         }
@@ -887,15 +928,16 @@ export default function BookShelvesPage() {
           border: 0;
           border-radius: 0;
           background: transparent;
-          color: #98a2b3;
+          color: #a0a09b;
           font-size: 8.7px;
-          font-weight: 800;
+          font-family: 'Courier New', ui-monospace, monospace;
+          font-weight: 700;
           cursor: pointer;
           white-space: nowrap;
         }
 
         .statusTab.active {
-          color: #5b8def;
+          color: #6f8fb9;
         }
 
         .statusTab.active::after {
@@ -906,7 +948,7 @@ export default function BookShelvesPage() {
           width: 22px;
           height: 2px;
           border-radius: 999px;
-          background: #5b8def;
+          background: #8da8c8;
           transform: translateX(-50%);
         }
 
@@ -918,7 +960,7 @@ export default function BookShelvesPage() {
           width: 1px;
           height: 10px;
           border-radius: 999px;
-          background: #d7dce5;
+          background: #dfdfdc;
           opacity: 0.75;
         }
 
@@ -926,6 +968,9 @@ export default function BookShelvesPage() {
           height: 300px;
           flex: 0 0 300px;
           padding: 0 14px;
+
+          background: var(--widget-bg);
+
           overflow: hidden;
         }
 
@@ -942,15 +987,13 @@ export default function BookShelvesPage() {
 
           height: 145px;
 
-          border: 1px solid #e7ebf2;
+          border: 1px solid #e4e4e1;
 
-          border-radius: 14px;
+          border-radius: 11px;
 
-          background: rgba(255, 255, 255, 0.95);
+          background: var(--card-bg);
 
-          box-shadow:
-            0 4px 12px rgba(148, 163, 184, 0.05),
-            0 1px 2px rgba(148, 163, 184, 0.04);
+          box-shadow: 0 1px 3px rgba(55, 53, 47, 0.045);
 
           padding: 18px 9px 8px;
 
@@ -960,32 +1003,58 @@ export default function BookShelvesPage() {
           flex-direction: column;
         }
 
+        .bookCard::after {
+          content: '';
+          position: absolute;
+          right: 8px;
+          top: 9px;
+          width: 14px;
+          height: 4px;
+          background: radial-gradient(circle, #d4d4d0 1px, transparent 1.4px) 0 0 / 5px 4px;
+          opacity: 0.75;
+        }
+
         .statusRibbon {
           position: absolute;
           left: 8px;
-          top: 0;
-          min-width: 36px;
-          height: 21px;
-          padding: 0 7px;
-          border-radius: 0 0 4px 4px;
-          color: #fff;
-          font-size: 8.5px;
-          font-weight: 800;
+          top: 7px;
+          min-width: 40px;
+          height: 17px;
+          padding: 0 7px 0 6px;
+          border: 1px solid;
+          border-radius: 999px;
+          font-family: 'Courier New', ui-monospace, monospace;
+          font-size: 7.4px;
+          font-weight: 700;
+          letter-spacing: -0.04em;
           display: flex;
           align-items: center;
           justify-content: center;
-          box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
+          gap: 4px;
+          box-shadow:
+            inset 0 1px 0 rgba(255, 255, 255, 0.85),
+            0 1px 2px rgba(55, 53, 47, 0.05);
           z-index: 2;
+        }
+
+        .statusRibbon i {
+          width: 4px;
+          height: 4px;
+          border: 1px solid currentColor;
+          border-radius: 50%;
+          background: rgba(255, 255, 255, 0.75);
+          opacity: 0.8;
+          flex: 0 0 auto;
         }
 
         .coverWrap {
           width: 50px;
           height: 70px;
           margin: 0 auto 8px;
-          border-radius: 6px;
+          border-radius: 4px;
           overflow: hidden;
           background: #e8e8ea;
-          box-shadow: 0 6px 12px rgba(0, 0, 0, 0.13);
+          box-shadow: 0 3px 8px rgba(55, 53, 47, 0.14);
         }
 
         .cover {
@@ -1017,7 +1086,7 @@ export default function BookShelvesPage() {
           text-align: left;
           color: var(--text-main);
           font-size: 9.5px;
-          font-weight: 800;
+          font-weight: 750;
           line-height: 1.3;
           cursor: pointer;
           white-space: nowrap;
@@ -1026,7 +1095,7 @@ export default function BookShelvesPage() {
         }
 
         .bookTitle:hover {
-          color: #5b8def;
+          color: #6687ad;
         }
 
         .author {
@@ -1056,7 +1125,9 @@ export default function BookShelvesPage() {
           max-width: 45px;
           height: 14px;
           padding: 0 6px;
-          border-radius: 6px;
+          border: 1px solid rgba(120, 120, 115, 0.08);
+          border-radius: 999px;
+          font-family: 'Courier New', ui-monospace, monospace;
           font-size: 7.2px;
           font-weight: 800;
           display: inline-flex;
@@ -1091,12 +1162,12 @@ export default function BookShelvesPage() {
         }
 
         :global(.activeStar) {
-          color: #f5a623;
-          text-shadow: 0 1px 4px rgba(245, 166, 35, 0.22);
+          color: #e2b55c;
+          text-shadow: none;
         }
 
         :global(.inactiveStar) {
-          color: #d7dbe3;
+          color: #dededb;
         }
 
         .noRating {
@@ -1128,6 +1199,7 @@ export default function BookShelvesPage() {
           padding: 0 14px 10px;
           color: var(--text-sub);
           font-size: 9px;
+          font-family: 'Courier New', ui-monospace, monospace;
           font-weight: 700;
           overflow: visible;
         }
@@ -1527,10 +1599,10 @@ export default function BookShelvesPage() {
 
         .mobileWidget .statusRibbon {
           left: 8px;
-          top: 0;
-          height: 19px;
+          top: 7px;
+          height: 17px;
           min-width: 34px;
-          font-size: 7.8px;
+          font-size: 7.2px;
         }
 
         .mobileWidget .coverWrap {
