@@ -36,6 +36,14 @@ import {
     id?: string;
     url?: string;
     created_time?: string;
+    icon?: {
+      type?: 'emoji' | 'external' | 'file' | 'custom_emoji' | 'icon';
+      emoji?: string;
+      external?: { url?: string };
+      file?: { url?: string };
+      custom_emoji?: { id?: string; name?: string; url?: string };
+      icon?: { name?: string; color?: string };
+    } | null;
     properties?: Record<string, NotionProperty>;
   };
   
@@ -229,6 +237,33 @@ import {
   function getProgressText(properties: Record<string, NotionProperty>) {
     return propertyToText(findProperty(properties, ['진행상태', '진행률', 'progress']));
   }
+
+  function getReviewText(
+    properties: Record<string, NotionProperty>,
+    candidates: string[]
+  ) {
+    return propertyToText(findProperty(properties, candidates));
+  }
+
+  function getPageIcon(page: QueryPageResult) {
+    if (page.icon?.type === 'emoji') {
+      return { type: 'emoji' as const, value: page.icon.emoji ?? '📖' };
+    }
+
+    if (page.icon?.type === 'external' && page.icon.external?.url) {
+      return { type: 'image' as const, value: page.icon.external.url };
+    }
+
+    if (page.icon?.type === 'file' && page.icon.file?.url) {
+      return { type: 'image' as const, value: page.icon.file.url };
+    }
+
+    if (page.icon?.type === 'custom_emoji' && page.icon.custom_emoji?.url) {
+      return { type: 'image' as const, value: page.icon.custom_emoji.url };
+    }
+
+    return { type: 'emoji' as const, value: '📖' };
+  }
   
   function parseRatingValue(ratingText: string | null) {
     if (!ratingText) return null;
@@ -392,6 +427,7 @@ import {
             id: page.id ?? null,
             url: page.url ?? null,
             createdTime: page.created_time ?? null,
+            icon: getPageIcon(page),
   
             title: readTitleFromProperties(properties),
             cover: getCoverUrl(properties),
@@ -412,6 +448,8 @@ import {
   
             ratingText,
             rating: parseRatingValue(ratingText),
+            liked: getReviewText(properties, ['좋았던 점', '좋았던점', '장점']),
+            disliked: getReviewText(properties, ['싫었던 점', '싫었던점', '아쉬웠던 점', '단점']),
           };
         })
       );
