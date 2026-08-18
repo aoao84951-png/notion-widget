@@ -697,9 +697,7 @@ export default function BookShelvesPage() {
           color: var(--text-main);
           display: flex;
           flex-direction: column;
-          box-shadow:
-            0 0 0 3px rgba(245, 245, 243, 0.9),
-            0 12px 28px rgba(55, 53, 47, 0.07);
+          box-shadow: none;
         }
 
         .topBar {
@@ -1162,7 +1160,7 @@ export default function BookShelvesPage() {
         }
 
         :global(.activeStar) {
-          color: #e2b55c;
+          color: #ffc94a;
           text-shadow: none;
         }
 
